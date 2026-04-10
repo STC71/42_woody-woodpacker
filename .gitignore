@@ -1,0 +1,50 @@
+# PDFs (subject, evaluation, etc.)
+*.pdf
+
+# Archivos objeto y compilados
+*.o
+*.out
+*.a
+*.so
+
+# Ejecutables del proyecto
+woody_woodpacker
+woody
+
+# Binarios de prueba temporales
+sample_packed
+*.bin
+
+# Archivos temporales de C / Assembly
+*.dSYM/
+*.su
+*.idb
+*.pdb
+*.lst
+*.s~
+
+# Core dumps
+core
+core.*
+
+# IDE y editores
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.#*
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Makefiles temporales
+Makefile.bak
+
+# Directorios de build (si decides usar uno)
+build/
+obj/
