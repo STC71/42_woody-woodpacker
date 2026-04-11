@@ -9,6 +9,7 @@
 
 # Ejecutables del proyecto
 woody_woodpacker
+woody
 
 # Binarios de prueba temporales
 sample_packed
@@ -38,8 +39,9 @@ core.*
 .DS_Store
 Thumbs.db
 
-# Logs
+# Logs & Reportes
 *.log
+*.txt
 
 # Makefiles temporales
 Makefile.bak
