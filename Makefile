@@ -81,7 +81,7 @@ fclean: clean
 	@echo "$(ROJO)[-] Exterminando los ejecutables finales y logs de tests...$(RESET)"
 	@rm -f $(NAME)
 	@rm -f woody
-	@rm -f *.log *.txt
+	@rm -f *.log *.txt *.tmp
 
 re: fclean all
 

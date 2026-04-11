@@ -42,6 +42,7 @@ Thumbs.db
 # Logs & Reportes
 *.log
 *.txt
+*.tmp
 
 # Makefiles temporales
 Makefile.bak
