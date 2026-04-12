@@ -64,7 +64,7 @@ find_code "Reglas de compilación" "^re:" Makefile
 echo -e "${C_Y}ESPERADO:${C_DF} El ensamblador NASM y gcc devuelven 0, creando los binarios correctamente.\n"
 make re >/dev/null 2>&1
 if [ $? -eq 0 ]; then echo -e "   [ ${C_G}✓ PASS${C_DF} ] Makefile ejecutado sin errores."; else echo -e "   [ ${C_R}✗ FAIL${C_DF} ] Fallo en Make"; exit 1; fi
-#pause_for_user
+pause_for_user
 
 # ---------------------------------------------------------
 echo -e "${C_B}▶ TEST 1: COMPORTAMIENTO BÁSICO (Empaquetar LS)${C_DF}"
@@ -76,7 +76,7 @@ echo -e "${C_Y}ESPERADO:${C_DF} Se genera el archivo infectado './woody' y se im
 cp /bin/ls ./ls_test
 ./woody_woodpacker ./ls_test > woody_out.log
 test_result $?
-#pause_for_user
+pause_for_user
 
 echo -e "${C_B}▶ TEST 2: COMPORTAMIENTO DEL INFECTADO (Ejecutar Payload)${C_DF}"
 echo -e "${C_Y}COMANDO:${C_DF} ./woody | grep '....WOODY....'"
@@ -86,7 +86,7 @@ find_code "Cadena inyectada" "\.\.\.\.WOODY\.\.\.\." asm/payload.s
 echo -e "${C_Y}ESPERADO:${C_DF} La cadena se imprime antes de que el programa devuelva el control al Entry Point original.\n"
 ./woody | grep -q "....WOODY...."
 test_result $?
-#pause_for_user
+pause_for_user
 
 echo -e "${C_B}▶ TEST 3: COMPARATIVA FUNCIONAL ORIGINAL VS WOODY${C_DF}"
 echo -e "${C_Y}COMANDO:${C_DF} diff <(./ls_test test_dir) <(./woody test_dir | grep -v 'WOODY')"
@@ -102,7 +102,7 @@ grep -v "....WOODY...." infect_out.txt > clean_infect.txt
 diff orig_out.txt clean_infect.txt > /dev/null
 test_result $?
 rm -rf test_dir
-#pause_for_user
+pause_for_user
 
 # ---------------------------------------------------------
 echo -e "${C_B}▶ TEST 4: PRESERVACIÓN DE PERMISOS DE ARCHIVO${C_DF}"
@@ -116,7 +116,7 @@ chmod 711 ./ls_test
 ORIG_PERM=$(stat -c "%a" ./ls_test)
 NEW_PERM=$(stat -c "%a" ./woody)
 if [ "$ORIG_PERM" = "$NEW_PERM" ]; then test_result 0; else test_result 1; fi
-#pause_for_user
+pause_for_user
 
 # ---------------------------------------------------------
 echo -e "${C_B}▶ TEST 5: ARCHIVOS ERRÓNEOS Y LÍMITES - MODO ABOGADO DEL DIABLO${C_DF}"
@@ -141,7 +141,7 @@ test_result $?
 echo "  5.4 - Fichero de 32-bits (Subject Constraint)."
 ./woody_woodpacker resources/sample 2>&1 | grep -q "Error: El archivo no es un ELF de 64 bits"
 test_result $?
-#pause_for_user
+pause_for_user
 
 # ---------------------------------------------------------
 echo -e "${C_B}▶ TEST 6: ANÁLISIS DE FUGAS DE MEMORIA Y SEGFAULTS (VALGRIND)${C_DF}"
@@ -157,7 +157,7 @@ if [ $? -ne 42 ]; then test_result 0; else test_result 1; fi
 echo "  6.2 - Valgrind en Ejecución Fallida (No ELF)."
 valgrind --leak-check=full --error-exitcode=42 ./woody_woodpacker dummy.txt > /dev/null 2>&1
 if [ $? -ne 42 ]; then test_result 0; else test_result 1; fi
-#pause_for_user
+pause_for_user
 
 # ---------------------------------------------------------
 echo -e "${C_B}▶ TEST 7: BONUS - CIFRADO PARAMETRIZADO (16-BYTES)${C_DF}"
@@ -181,7 +181,7 @@ echo "  7.3 - Asegurar que el uso sin parametros genera Random Key de /dev/urand
 diff key_out1.txt key_out2.txt > /dev/null
 # Si diff detecta diferencias, significa que la llave es pseudoaleatoria de verdad (éxito).
 if [ $? -eq 1 ]; then test_result 0; else test_result 1; fi
-#pause_for_user
+pause_for_user
 
 # ---------------------------------------------------------
 echo -e "${C_B}▶ TEST 8: CORRUPCIÓN EXTREMA Y EDGE CASES (DEVIL'S ADVOCATE)${C_DF}"
@@ -216,7 +216,7 @@ cp /bin/ls corrupt_shoff_elf
 printf '\xff\xff\xff\xff' | dd of=corrupt_shoff_elf bs=1 seek=40 count=4 conv=notrunc > /dev/null 2>&1
 ./woody_woodpacker corrupt_shoff_elf 2>&1 | grep -q "Diseño ELF corrupto detectado"
 test_result $?
-#pause_for_user
+pause_for_user
 
 # ---------------------------------------------------------
 echo -e "${C_B}▶ TEST 9: RESTRICCIONES DE SISTEMA (PERMISOS Y FD LEAKS)${C_DF}"
