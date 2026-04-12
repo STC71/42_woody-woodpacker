@@ -23,7 +23,9 @@ Antes de tocar nada, el polizón guarda exactamente cómo estaban la memoria y l
 El programa imprime el clásico mensaje en pantalla: `"....WOODY...."`. Para ello, invoca directamente a las funciones internas del sistema operativo de Linux (llamadas *Syscalls*).
 
 ### 3. Encontrarse a sí mismo en el espacio (PIE)
-Los programas modernos no cargan siempre en la misma dirección de memoria por seguridad. Nuestro polizón es ciego; no sabe dónde ha sido inyectado. Por tanto, usa un truco técnico para calcular **su propia posición relativa**. ¡Así evita perderse en la inmensidad de la memoria RAM!
+Los programas modernos no cargan siempre en la misma dirección de memoria por seguridad (Position Independent Executable). Nuestro polizón es ciego; no sabe dónde ha sido inyectado al milímetro.
+
+Para resolver esto, el ensamblador utiliza **Direccionamiento Relativo al RIP** (Instruction Pointer). En lugar de decir "el mensaje está en la dirección 0x4000", dice "el mensaje está 50 pasos por delante de dónde me encuentro ahora mismo" (`lea rdi, [rip + offset]`). Alternativamente, usa el clásico truco de hacer un `call` a la instrucción inmediatamente siguiente y usar un `pop` para guardar en un registro dónde aterrizó. ¡Así el polizón descubre sus propias coordenadas para no perderse en la inmensidad de la memoria RAM!
 
 ### 4. Recibir el "Golpe Maestro" del inyector en C
 El archivo en ensamblador tiene preparadas unas "Variables Huecas" o una **Firma Mágica**. Cuando el empaquetador en C inserta a este pasajero en el tren, sustituye esos huecos rellenándolos con:
