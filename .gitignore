@@ -14,6 +14,13 @@ woody
 # Binarios de prueba temporales
 sample_packed
 *.bin
+ls_test
+empty_file
+1byte_file
+trunc_elf
+corrupt_shoff_elf
+no_perm_elf
+test_dir/
 
 # Archivos temporales de C / Assembly
 *.dSYM/

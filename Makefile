@@ -82,13 +82,14 @@ fclean: clean
 	@rm -f $(NAME)
 	@rm -f woody
 	@rm -f *.log *.txt *.tmp
+	@rm -rf ls_test test_dir dummy.txt orig_out.txt infect_out.txt clean_infect.txt param_out.log woody_out.log key_out1.txt key_out2.txt empty_file 1byte_file trunc_elf corrupt_shoff_elf no_perm_elf valgrind_fds.log
 
 re: fclean all
 
 # ==================== UTILIDADES BDD (TEST & AYUDA) =========================
 
 test: all
-	@echo "$(AMARILLO)🚀 Lanzaando la batería estricta de test automáticos...$(RESET)"
+	@echo "$(AMARILLO)🚀 Lanzando la batería estricta de test automáticos...$(RESET)"
 	@./test_auto.sh
 
 eval: all
