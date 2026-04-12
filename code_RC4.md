@@ -19,6 +19,20 @@ Para lograrlo, aplicamos criptografía. Encadenamos todas las piezas del libro e
 
 Funciona como un trucaje de magia con una baraja tradicional de 256 cartas. 
 
+```mermaid
+graph TD
+    subgraph KSA [Fase 1: Inicialización de la Llave KSA]
+        A[Array S de 256 Bytes 0-255] --> B[Mezclar iterativamente S cruzándolo con Bytes de la Llave Secreta]
+        B --> C[Estado KSA Permutado y Listo]
+    end
+    subgraph PRGA [Fase 2: Generación Pseudoaletoria PRGA+XOR]
+        C --> D[Extraer Bytes dinámicos de S basados en i, j]
+        D --> E{Byte Pseudoaleatorio Obtenido}
+        E --> |XOR Matemático Invertible| F[Byte Original del ELF]
+        F --> G[¡Byte Cifrado / Descifrado!]
+    end
+```
+
 ### Fase 1: Mezclando el Mazo (KSA - Key-Scheduling Algorithm)
 Nuestro programa en C (`crypto.c`) o el usuario, provee una llave de 16 bytes. 
 Empezamos con una baraja ordenada numéricamente del 0 al 255. La fase del algoritmo KSA toma la clave y utiliza sus números y caracteres para decidir cómo ir mezclando agresivamente y sin sentido aparente unas cartas con las otras en la baraja. Al terminar este proceso obtenemos un mazo tan aleatoriamente entreverado que las matemáticas proponen que es estadísticamente imposible reconstruir el orden original sin poseer la clave inicial.
