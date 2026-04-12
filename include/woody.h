@@ -1,16 +1,16 @@
 #ifndef WOODY_H
 # define WOODY_H
 
-# include <elf.h>
-# include <fcntl.h>
-# include <stdio.h>
-# include <stdlib.h>
-# include <string.h>
-# include <stdint.h>
-# include <time.h>
-# include <sys/mman.h>
-# include <sys/stat.h>
-# include <unistd.h>
+# include <elf.h>           // Para estructuras ELF y constantes relacionadas con el formato ELF
+# include <fcntl.h>         // Para open() y constantes de flags de archivos (O_RDONLY, O_WRONLY, etc.)
+# include <stdio.h>         // Para funciones de entrada/salida estándar (printf, fprintf, etc.)
+# include <stdlib.h>        // Para funciones de utilidad general (malloc, free, exit, etc.)
+# include <string.h>        // Para funciones de manipulación de cadenas (strlen, memcpy, memcmp, etc.)
+# include <stdint.h>        // Para tipos de enteros con tamaños específicos (uint8_t, uint64_t, etc.)
+# include <time.h>          // Para funciones relacionadas con el tiempo (time, etc.)
+# include <sys/mman.h>      // Para funciones de mapeo de memoria (mmap, munmap, etc.)
+# include <sys/stat.h>      // Para funciones relacionadas con el estado de archivos (fstat, struct stat, etc.)
+# include <unistd.h>        // Para funciones de bajo nivel (close, read, write, etc.)
 
 # define ERR_USAGE "Uso: ./woody_woodpacker <binario>\n"
 # define ERR_OPEN "Error: No se pudo abrir el archivo\n"
