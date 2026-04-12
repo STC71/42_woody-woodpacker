@@ -12,29 +12,29 @@
 # include <sys/stat.h>
 # include <unistd.h>
 
-# define ERR_USAGE "Usage: ./woody_woodpacker <binary>\n"
-# define ERR_OPEN "Error: Could not open file\n"
-# define ERR_FSTAT "Error: Could not retrieve file information (or is a directory)\n"
-# define ERR_MMAP "Error: mmap failed\n"
-# define ERR_NOT_ELF "Error: File is not a valid ELF\n"
-# define ERR_NOT_64 "Error: File is not a 64-bit ELF\n"
-# define ERR_NOT_X86_64 "Error: File is not an x86_64 architecture binary\n"
-# define ERR_NOT_EXEC "Error: File is neither an executable nor a shared object\n"
+# define ERR_USAGE "Uso: ./woody_woodpacker <binario>\n"
+# define ERR_OPEN "Error: No se pudo abrir el archivo\n"
+# define ERR_FSTAT "Error: No se pudo obtener información del archivo (o es un directorio)\n"
+# define ERR_MMAP "Error: Fallo al ejecutar mmap\n"
+# define ERR_NOT_ELF "Error: El archivo no es un ELF válido\n"
+# define ERR_NOT_64 "Error: El archivo no es un ELF de 64 bits\n"
+# define ERR_NOT_X86_64 "Error: El binario no tiene una arquitectura x86_64\n"
+# define ERR_NOT_EXEC "Error: El archivo no es un ejecutable ni un objeto compartido (shared object)\n"
 
 typedef struct s_woody
 {
-    void        *addr;
-    size_t      size;
-    mode_t      file_mode; // Guardaremos los persmisos originales aquí
-    Elf64_Ehdr  *ehdr;
+    void        *addr;      // Dirección base del archivo mapeado en memoria
+    size_t      size;       // Tamaño del archivo mapeado
+    mode_t      file_mode;  // Guardaremos los persmisos originales aquí
+    Elf64_Ehdr  *ehdr;      // Puntero al ELF Header para acceso rápido
     
     // Tramos encontrados en la Fase 2 (Segmento y Sección Objetivos)
     Elf64_Phdr  *target_segment; // Segmento Ejecutable donde inyectaremos
     Elf64_Shdr  *text_section;   // Sección de Código original a encriptar
 
     // Información del Cave y Payload
-    size_t      cave_offset;
-    size_t      cave_size;
+    size_t      cave_offset;    // Offset dentro del archivo donde se encuentra la cueva
+    size_t      cave_size;      // Tamaño de la cueva (espacio disponible para inyección)
     
     // Criptografía (RC4)
     uint8_t     key[16];   // Clave de cifrado de 128-bit

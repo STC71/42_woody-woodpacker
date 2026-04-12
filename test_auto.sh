@@ -24,7 +24,7 @@ print_header() {
     echo -e "${C_B}╭────────────────────────────────────────────────────────────────────╮${C_DF}"
     echo -e "${C_B}│${C_W}${BOLD}                  TEST_AUTO.SH: WOODY-WOODPACKER                    ${C_DF}${C_B}│${C_DF}"
     echo -e "${C_B}│${C_DF}                           by sternero                              ${C_B}│${C_DF}"
-    echo -e "${C_B}│${C_DF}          Test Exhaustivo de Límites y Abogado del Diablo           ${C_B}│${C_DF}"
+    echo -e "${C_B}│${C_DF}        Test Exhaustivo de Límites con Abogado del Diablo           ${C_B}│${C_DF}"
     echo -e "${C_B}╰────────────────────────────────────────────────────────────────────╯${C_DF}\n"
 }
 
@@ -109,7 +109,7 @@ echo -e "${C_B}▶ TEST 4: PRESERVACIÓN DE PERMISOS DE ARCHIVO${C_DF}"
 echo -e "${C_Y}COMANDO:${C_DF} stat -c '%a' ./woody"
 echo -e "${C_Y}OBJETIVO:${C_DF} Comprobar que woody crea el archivo empaquetado heredando los mismos permisos (modes) de acceso."
 echo -e "${C_Y}MÉTODO:${C_DF} Modifica ls_test a 0711, empaqueta e inspecciona los permisos del nuevo archivo infectado."
-find_code "Clonación de stat/chmod" "woody->file_mode|chmod(" src/main.c src/injector.c
+find_code "Clonación de stat/chmod" "woody->file_mode|chmod\(" src/main.c src/injector.c
 echo -e "${C_Y}ESPERADO:${C_DF} ./woody hereda mode 0711, saltándose el Umask standard de bash (0755 o 0644).\n"
 chmod 711 ./ls_test
 ./woody_woodpacker ./ls_test > /dev/null
@@ -123,23 +123,23 @@ echo -e "${C_B}▶ TEST 5: ARCHIVOS ERRÓNEOS Y LÍMITES - MODO ABOGADO DEL DIAB
 echo -e "${C_Y}COMANDO:${C_DF} ./woody_woodpacker <invalid_inputs>"
 echo -e "${C_Y}OBJETIVO:${C_DF} Validar que el packer de C maneja correctamente strings raras, tipos inválidos o headers truncados."
 echo -e "${C_Y}MÉTODO:${C_DF} Alimentar el packer con directorios, strings de texto y binarios incorrectos."
-find_code "Errores de validación" "Could not open file|not a valid ELF|not a 64-bit ELF" src/main.c src/elf_parser.c
+find_code "Errores de validación" "ERR_OPEN|ERR_NOT_ELF|ERR_NOT_64" src/main.c src/elf_parser.c
 echo -e "${C_Y}ESPERADO:${C_DF} El programa aborta limpiamente sin Segfaults y muestra un mensaje de error descriptivo.\n"
 echo "  5.1 - Fichero no existe."
-./woody_woodpacker /tmp/fake_file22 2>&1 | grep -q "Error: Could not open file"
+./woody_woodpacker /tmp/fake_file22 2>&1 | grep -q "Error: No se pudo abrir el archivo"
 test_result $?
 
 echo "  5.2 - Fichero es un directorio."
-./woody_woodpacker /tmp 2>&1 | grep -q "Error: Could not retrieve file information"
+./woody_woodpacker /tmp 2>&1 | grep -q "Error: No se pudo obtener información del archivo"
 test_result $?
 
 echo "  5.3 - Fichero de Texto (No ELF)."
 echo "Hola Mundo" > dummy.txt
-./woody_woodpacker dummy.txt 2>&1 | grep -q "Error: File is not a valid ELF"
+./woody_woodpacker dummy.txt 2>&1 | grep -q "Error: El archivo no es un ELF válido"
 test_result $?
 
 echo "  5.4 - Fichero de 32-bits (Subject Constraint)."
-./woody_woodpacker resources/sample 2>&1 | grep -q "Error: File is not a 64-bit ELF"
+./woody_woodpacker resources/sample 2>&1 | grep -q "Error: El archivo no es un ELF de 64 bits"
 test_result $?
 pause_for_user
 
@@ -171,8 +171,8 @@ echo "  7.1 - Cifrado forzado con llave personalizada de longitud correcta (32 c
 grep -q "KEY \[128-bit RC4\]: 0x00112233445566778899AABBCCDDEEFF" param_out.log
 test_result $?
 
-echo "  7.2 - Cifrado con llave de longitud insuficiente (Error Expected)."
-./woody_woodpacker ./ls_test AABBCC 2>&1 | grep -q "Error: Bonus Custom Key must be exactly 32 hex characters"
+echo "  7.2 - Cifrado con llave de longitud insuficiente (Error Esperado)."
+./woody_woodpacker ./ls_test AABBCC 2>&1 | grep -q "Error: Bonus Custom Key debe constar exactamente de 32 caracteres hexadecimales"
 test_result $?
 
 echo "  7.3 - Asegurar que el uso sin parametros genera Random Key de /dev/urandom."
@@ -228,12 +228,12 @@ echo -e "${C_Y}ESPERADO:${C_DF} En caso de crash o error, no debe quedar ningún
 
 echo "  9.1 - Archivo origen sin permisos de lectura (chmod 000)."
 cp /bin/ls no_perm_elf && chmod 000 no_perm_elf
-./woody_woodpacker no_perm_elf 2>&1 | grep -E -q "(Error: Could not open file|Permission denied)"
+./woody_woodpacker no_perm_elf 2>&1 | grep -E -q "(Error: No se pudo abrir el archivo|Permission denied)"
 test_result $?
 
 echo "  9.2 - Archivo destino pre-existente y bloqueado (Imposible sobreescribir ./woody)."
 touch woody && chmod 000 woody
-./woody_woodpacker ./ls_test 2>&1 | grep -q "Error: Could not create output file 'woody'"
+./woody_woodpacker ./ls_test 2>&1 | grep -q "Error: No se pudo crear archivo resultante 'woody'"
 test_result $?
 rm -f woody # Forzamos borrado para continuar
 

@@ -12,7 +12,7 @@ int parse_custom_key(t_woody *woody, const char *hex_str)
     // Para una clave de 16 bytes necesitamos exactamente 32 caracteres hex
     if (len != 32)
     {
-        fprintf(stderr, "Error: Bonus Custom Key must be exactly 32 hex characters (16 bytes).\n");
+        fprintf(stderr, "Error: Bonus Custom Key debe constar exactamente de 32 caracteres hexadecimales (16 bytes).\n");
         return (-1);
     }
 
@@ -23,7 +23,7 @@ int parse_custom_key(t_woody *woody, const char *hex_str)
         if (!strchr("0123456789abcdefABCDEF", hex_str[i * 2]) ||
             !strchr("0123456789abcdefABCDEF", hex_str[i * 2 + 1]))
         {
-            fprintf(stderr, "Error: Invalid hex character in key.\n");
+            fprintf(stderr, "Error: Carácter hexadecimal inválido en la clave.\n");
             return (-1);
         }
 
@@ -36,18 +36,18 @@ int parse_custom_key(t_woody *woody, const char *hex_str)
 
 /*
 ** Genera una clave pseudoaleatoria leyendo desde la máxima entropía del kernel
-** de Linux (/dev/urandom). Requisito indispensable según en.subject.pdf.
+** de Linux (/dev/urandom). Requisito indispensable según el subject.
 */
 void generate_random_key(t_woody *woody)
 {
     int fd;
 
     woody->key_len = 16; // Cifrado a 128-bits
-    fd = open("/dev/urandom", O_RDONLY);
+    fd = open("/dev/urandom", O_RDONLY);    // Intentamos abrir la fuente de entropía del sistema
     if (fd < 0)
     {
         // En caso remoto de fallar, fallback a rand() normal
-        fprintf(stderr, "Warning: /dev/urandom inaccessible. Falling back to rand().\n");
+        fprintf(stderr, "Advertencia: /dev/urandom inaccesible. Retrocediendo a rand().\n");
         srand(time(NULL));
         for (size_t i = 0; i < woody->key_len; i++)
             woody->key[i] = rand() % 256;
@@ -56,7 +56,7 @@ void generate_random_key(t_woody *woody)
     {
         if (read(fd, woody->key, woody->key_len) != (ssize_t)woody->key_len)
         {
-            fprintf(stderr, "Warning: /dev/urandom read failed. Falling back to rand().\n");
+            fprintf(stderr, "Advertencia: Lectura de /dev/urandom fallida. Retrocediendo a rand().\n");
             srand(time(NULL));
             for (size_t i = 0; i < woody->key_len; i++)
                 woody->key[i] = rand() % 256;
@@ -115,11 +115,11 @@ int encrypt_text_section(t_woody *woody)
     target_ptr = (uint8_t *)(woody->addr + woody->text_section->sh_offset);
     target_size = woody->text_section->sh_size;
 
-    printf("Encrypting .text section from offset 0x%lx (%lu bytes) with RC4...\n", 
+    printf("Encriptando sección .text desde offset 0x%lx (%lu bytes) mediante RC4...\n", 
            woody->text_section->sh_offset, target_size);
 
     rc4_cipher(target_ptr, target_size, woody->key, woody->key_len);
     
-    printf("Successfully Encrypted.\n");
+    printf("Encriptación completada exitosamente.\n");
     return (0);
 }

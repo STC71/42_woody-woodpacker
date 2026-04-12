@@ -4,44 +4,44 @@ void cleanup_woody(t_woody *woody)
 {
     if (woody->addr && woody->addr != MAP_FAILED)
     {
-        munmap(woody->addr, woody->size);
+        munmap(woody->addr, woody->size);   // Liberamos la memoria mapeada
         woody->addr = NULL;
     }
 }
 
 static int check_elf_format(t_woody *woody)
 {
-    // Minimal size for an ELF header
+    // Tamaño mínimo para la cabecera ELF
     if (woody->size < sizeof(Elf64_Ehdr))
     {
-        fprintf(stderr, ERR_NOT_ELF);
+        fprintf(stderr, ERR_NOT_ELF);   // No es un ELF válido si el tamaño es menor que el de un header
         return (-1);
     }
 
     woody->ehdr = (Elf64_Ehdr *)woody->addr;
 
-    // Check Magic Number \x7f E L F
+    // Comprobar Número Mágico \x7f E L F
     if (memcmp(woody->ehdr->e_ident, ELFMAG, SELFMAG) != 0)
     {
-        fprintf(stderr, ERR_NOT_ELF);
+        fprintf(stderr, ERR_NOT_ELF);   // No es un ELF válido si no tiene la firma mágica correcta
         return (-1);
     }
 
-    // Check if 64-bit
+    // Comprobar si es 64-bit
     if (woody->ehdr->e_ident[EI_CLASS] != ELFCLASS64)
     {
-        fprintf(stderr, ERR_NOT_64);
+        fprintf(stderr, ERR_NOT_64);    // No es un ELF de 64-bit si el campo EI_CLASS no es ELFCLASS64
         return (-1);
     }
 
-    // Check if x86_64
+    // Comprobar si es arquitectura x86_64
     if (woody->ehdr->e_machine != EM_X86_64)
     {
-        fprintf(stderr, ERR_NOT_X86_64);
+        fprintf(stderr, ERR_NOT_X86_64);    // No es un ELF de arquitectura x86_64
         return (-1);
     }
 
-    // Check if it's an executable or relatively linked (PIE) shared object
+    // Comprobar que es un software ejecutable puro o de carga dinámica (PIE)
     if (woody->ehdr->e_type != ET_EXEC && woody->ehdr->e_type != ET_DYN)
     {
         fprintf(stderr, ERR_NOT_EXEC);
@@ -56,25 +56,25 @@ int init_woody(const char *filename, t_woody *woody)
     int         fd;
     struct stat st;
 
-    fd = open(filename, O_RDONLY);
+    fd = open(filename, O_RDONLY);  // Intentamos abrir el archivo destino en modo lectura para mapearlo posteriormente
     if (fd < 0)
     {
-        fprintf(stderr, ERR_OPEN);
+        fprintf(stderr, ERR_OPEN);  // No se pudo abrir el archivo (puede que no exista o no tengamos permisos)
         return (-1);
     }
 
     if (fstat(fd, &st) < 0 || S_ISDIR(st.st_mode))
     {
         fprintf(stderr, ERR_FSTAT);
-        close(fd);
+        close(fd);      // Cerramos el descriptor de archivo antes de salir
         return (-1);
     }
 
-    woody->size = st.st_size;
-    woody->file_mode = st.st_mode;
-    // Map the file privately so we can write over our memory buffer directly without affecting the original file
+    woody->size = st.st_size;       // Guardamos el tamaño del archivo para límites de seguridad en accesos posteriores
+    woody->file_mode = st.st_mode;  // Guardamos los permisos originales para luego aplicarlos al archivo destino
+    // Mapear fichero como privado para sobreescribir memoria cómodamente sin alterar el disco original
     woody->addr = mmap(NULL, woody->size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
-    close(fd);
+    close(fd);      // Cerramos el descriptor de archivo después de mapearlo, ya no lo necesitaremos
 
     if (woody->addr == MAP_FAILED)
     {
@@ -99,7 +99,7 @@ int main(int argc, char **argv)
 
     if (argc < 2 || argc > 3)
     {
-        fprintf(stderr, "Usage: ./woody_woodpacker <binary> [16-byte-hex-key]\n");
+        fprintf(stderr, "Uso: ./woody_woodpacker <binario> [clave-hex-de-16-bytes]\n");
         return (1);
     }
 
@@ -119,13 +119,13 @@ int main(int argc, char **argv)
         generate_random_key(&woody);
 
     // Impresión de la Key (Formato típico Packer)
-    printf("KEY [128-bit RC4]: 0x");
+    printf("CLAVE [128-bit RC4]: 0x");
     for (size_t i = 0; i < woody.key_len; i++)
         printf("%02X", woody.key[i]);
     printf("\n");
 
-    printf("SUCCESS! File '%s' mapped at %p\n", argv[1], woody.addr);
-    printf("Original Entry Point (OEP) is 0x%lx\n", woody.ehdr->e_entry);
+    printf("¡ÉXITO! Archivo '%s' mapeado en la dirección %p\n", argv[1], woody.addr);
+    printf("Original Entry Point (OEP) original reside en 0x%lx\n", woody.ehdr->e_entry);
 
     if (parse_elf(&woody) < 0)
     {

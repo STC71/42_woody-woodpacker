@@ -13,26 +13,26 @@ int generate_and_inject_payload(t_woody *woody)
     size_t      payload_size;
     uint64_t    *patch_ptr = NULL;
 
-    printf("Injecting ASM Payload... Phase 4 & 5\n");
+    printf("Inyectando Payload ASM... Fases 4 y 5\n");
 
     // 1. Leer el archivo binario del payload pre-ensamblado
-    fd = open("asm/payload.bin", O_RDONLY);
+    fd = open("asm/payload.bin", O_RDONLY);     // Intentamos abrir el archivo del payload ensamblado
     if (fd < 0)
     {
-        fprintf(stderr, "Error: Could not open asm/payload.bin. Did you run Make?\n");
+        fprintf(stderr, "Error: No se pudo abrir asm/payload.bin. ¿Ha ejecutado Make?\n");
         return (-1);
     }
     fstat(fd, &st);
     payload_size = st.st_size;
     payload = malloc(payload_size);
     read(fd, payload, payload_size);
-    close(fd);
+    close(fd);      // Cerramos el descriptor de archivo después de leer el payload
 
     // Verificamos que quepa dentro de la Cueva que encontramos en la Fase 2 
     if (payload_size > woody->cave_size)
     {
-        fprintf(stderr, "Error: Payload size (%lu bytes) exceeds Code Cave capacity (%lu bytes).\n", payload_size, woody->cave_size);
-        fprintf(stderr, "Expanding the segment dynamically is required but out of scope for this basic cave implementation.\n");
+        fprintf(stderr, "Error: Tamaño del payload (%lu bytes) excede la capacidad de la Code Cave (%lu bytes).\n", payload_size, woody->cave_size);
+        fprintf(stderr, "Expandir dinámicamente el segmento sería necesario, pero escapa del alcance de esta implementación básica.\n");
         free(payload);
         return (-1);
     }
@@ -53,7 +53,7 @@ int generate_and_inject_payload(t_woody *woody)
 
     if (!patch_ptr)
     {
-        fprintf(stderr, "Error: Payload variables signature not found!\n");
+        fprintf(stderr, "Error: ¡No se encontró la firma en variables del Payload!\n");
         free(payload);
         return (-1);
     }
@@ -90,19 +90,19 @@ int generate_and_inject_payload(t_woody *woody)
     fd = open("woody", O_CREAT | O_TRUNC | O_WRONLY, woody->file_mode);
     if (fd < 0)
     {
-        fprintf(stderr, "Error: Could not create output file 'woody'\n");
+        fprintf(stderr, "Error: No se pudo crear archivo resultante 'woody'\n");
         free(payload);
         return (-1);
     }
     
     // Volcamos todo el buffer corrupto
-    write(fd, woody->addr, woody->size);
-    close(fd);
+    write(fd, woody->addr, woody->size);    // Escribimos el buffer completo (con modificaciones) al nuevo archivo `woody`
+    close(fd);                              // Cerramos el descriptor de archivo después de escribirlo
     free(payload);
     
     // Forzamos un chmod en caso de que la máscara Umask del sistema anule el file_mode de open
     chmod("woody", woody->file_mode);
 
-    printf("Creation of binary 'woody' completed!\n");
+    printf("¡Creación del archivo binario 'woody' completada!\n");
     return (0);
 }

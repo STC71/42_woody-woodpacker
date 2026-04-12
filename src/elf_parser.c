@@ -8,7 +8,7 @@ static int is_safe_ptr(t_woody *woody, void *ptr, size_t size_needed)
 {
     if ((void *)ptr + size_needed > woody->addr + woody->size)
     {
-        fprintf(stderr, "Error: Corrupted ELF layout detected (Out of bounds access)\n");
+        fprintf(stderr, "Error: Diseño ELF corrupto detectado (Acceso fuera de límites)\n");
         return (0);
     }
     return (1);
@@ -45,13 +45,13 @@ static int find_text_section(t_woody *woody)
         if (strcmp(strtab + shdr[i].sh_name, ".text") == 0)
         {
             woody->text_section = &shdr[i];
-            printf("Found section: .text. Offset: 0x%lx, Size: 0x%lx\n", 
+            printf("Encontrada sección: .text. Offset: 0x%lx, Tamaño: 0x%lx\n", 
                    woody->text_section->sh_offset, woody->text_section->sh_size);
             return (0);
         }
     }
     
-    fprintf(stderr, "Error: '.text' section not found\n");
+    fprintf(stderr, "Error: No se encontró la sección '.text'\n");
     return (-1);
 }
 
@@ -85,7 +85,7 @@ static int find_code_cave(t_woody *woody)
 
     if (!woody->target_segment)
     {
-        fprintf(stderr, "Error: No executable PT_LOAD segment found\n");
+        fprintf(stderr, "Error: No se encontró un segmento PT_LOAD ejecutable\n");
         return (-1);
     }
 
@@ -110,7 +110,7 @@ static int find_code_cave(t_woody *woody)
     else
         woody->cave_size = 0;
 
-    printf("Found Code Cave at Offset: 0x%lx with Capacity: %lu bytes\n", 
+    printf("Encontrada Code Cave en Offset: 0x%lx con Capacidad: %lu bytes\n", 
            woody->cave_offset, woody->cave_size);
     
     return (0);
