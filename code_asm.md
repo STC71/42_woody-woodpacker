@@ -33,7 +33,12 @@ El archivo en ensamblador tiene preparadas unas "Variables Huecas" o una **Firma
 * Las coordenadas de la cabina de control original.
 
 ### 5. Desencriptar la lógica original (Misión Principal)
-El código de la aplicación original está protegido por un complejo candado criptográfico (RC4). Nuestro polizón extrae su llave y, a la velocidad del rayo, empieza a descifrar las instrucciones originales del programa directamente sobre la memoria RAM (este proceso se conoce como PRGA, *Pseudo-Random Generation Algorithm*).
+El código de la aplicación original está protegido por un candado criptográfico rápido y eficiente llamado **RC4** (Rivest Cipher 4). Es un algoritmo de cifrado de flujo ideal para malware porque ocupa muy poco espacio en lenguaje máquina.
+
+Nuestro polizón extrae la llave secreta y ejecuta la fase de desencriptado a la velocidad del rayo, directamente sobre la memoria RAM. Para lograr esto, utiliza el núcleo operativo del cifrado RC4, conocido como **PRGA** (*Pseudo-Random Generation Algorithm* o Algoritmo de Generación Pseudoaleatoria):
+
+* **¿Cómo funciona el PRGA?** Imagina una batidora matemática. Toma la llave secreta inyectada previamente y la utiliza como semilla para generar un flujo infinito y aparentemente caótico de bytes (una corriente pseudoaleatoria).
+* **El truco final (XOR):** El programa ensamblador toma cada byte del código original que estaba encriptado y lo combina matemáticamente (usando la operación binaria *XOR*) con un byte de esta corriente caótica generada por el PRGA. Como la operación XOR es reversible, al mezclar el código cifrado con la secuencia correcta, las instrucciones originales de la víctima reaparecen mágicamente en la memoria, listas para ser ejecutadas.
 
 ### 6. Borrar sus huellas
 Una vez descifrado el programa original, el polizón restaura toda la "copia de seguridad" de los mandos de la cabina que hizo en el Paso 1 (`pop` de los registros).
