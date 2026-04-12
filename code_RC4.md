@@ -38,3 +38,10 @@ La belleza de la puerta mágica "XOR" es su simetría espejo.
 3. **Ofuscación Simétrica Estática:** Cuando encriptamos por primera vez la aplicación (`crypto.c`), usamos C. Cuando la desencriptamos luego iterativamente en el equipo del usuario, usa Lenguaje Ensamblador nativo. El hecho de hacerlo funcionar coordinadamente atravesando las barreras del lenguaje muestra el inmenso poder de las matemáticas detrás del RC4.
 
 Con todo esto logramos que nuestro software mutante se proteja del escrutinio profundo, preservando su interior como un oscuro y sofisticado secreto hasta el preciso instante de la ejecución temporal natural.
+---
+
+<div align="center">
+
+[⬅️ Volver al README principal](./README.md)
+
+</div>

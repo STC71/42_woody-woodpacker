@@ -38,3 +38,10 @@ Esta es la parte más importante. En el lenguaje C, una `struct` es como la fich
 
 <br>
 Sabiendo esto, cada vez que una función del código C pida el expediente `t_woody`, ¡sabrás que le estamos entregando absolutamente todas las llaves necesarias para operar al paciente!
+---
+
+<div align="center">
+
+[⬅️ Volver al README principal](./README.md)
+
+</div>

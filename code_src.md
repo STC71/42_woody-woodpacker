@@ -35,3 +35,10 @@ El trabajo final. Es el más delicado.
 * **El Alta Médica:** Vuelca todas las modificaciones quirúrgicas que hemos estado operando sobre la Memoria RAM de nuevo dentro de un sólido disco duro, creando un nuevo ejecutable clonado final llamado `woody`, preservando idénticamente los permisos y accesos del paciente original.
 
 ¡Y el archivo queda empaquetado para siempre!
+---
+
+<div align="center">
+
+[⬅️ Volver al README principal](./README.md)
+
+</div>
