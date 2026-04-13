@@ -74,7 +74,7 @@ Nuestro polizón extrae la llave secreta y ejecuta la fase de desencriptado a la
 Una vez descifrado el programa original, el polizón restaura toda la "copia de seguridad" de los mandos de la cabina que hizo en el Paso 1 (`pop` de los registros).
 
 ### 7. El Salto Incondicional (Retorno a la normalidad)
-El último paso de nuestro código es un salto comando `jmp` (Jump) dictándole a la computadora: *"Ve al Punto de Entrada Original (OEP) del programa"*. El tren de pasajeros continúa su recorrido de forma natural, sin que los usuarios noten absolutamente nada anormal, salvo el mensaje en la consola.
+El último paso de nuestro código es un salto, comando `jmp` (Jump), dictándole a la computadora: *"Ve al Punto de Entrada Original (OEP) del programa"*. El tren de pasajeros continúa su recorrido de forma natural, sin que los usuarios noten absolutamente nada anormal, salvo el mensaje en la consola.
 
 ---
 

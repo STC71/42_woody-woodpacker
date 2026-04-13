@@ -149,7 +149,7 @@ static void rc4_cipher(uint8_t *data, size_t data_len, uint8_t *key, size_t key_
 int encrypt_text_section(t_woody *woody)
 {
     uint8_t *target_ptr;    // El Bisturí inyector: Puntero Temporal de RAM a RAM.
-    size_t  target_size;
+    size_t  target_size;    // El Tamaño del tejido a destruir (tamaño de la sección .text, por ende el bloque de código original).
 
     // Usamos las coordenadas guardadas de Woody para invocar localmente al motor sobre la víctima.
     target_ptr = (uint8_t *)(woody->addr + woody->text_section->sh_offset);

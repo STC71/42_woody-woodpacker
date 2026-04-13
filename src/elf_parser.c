@@ -98,6 +98,11 @@ static int find_code_cave(t_woody *woody)
     size_t      lowest_next_offset; // Variable para guardar el offset del siguiente segmento más cercano después del segmento ejecutable.
 
     // Localizamos la lista maestra de Segmentos
+    // phdr = ... "Ve a la dirección base del archivo mapeado en RAM, súmale el offset donde empiezan los Program Headers, y ahí encontrarás el primer segmento".
+    // Elf64_Phdr pertenece a <elf.h> y es la estructura que define cada segmento en el formato ELF. 
+    // Elf es un formato de archivo con una estructura muy rígida, y esta estructura nos dice exactamente dónde están los segmentos que el sistema operativo va a cargar en memoria para ejecutar el programa.
+    // offset es la distancia en bytes desde el inicio del archivo hasta donde empieza la tabla de segmentos (Program Headers).
+    // la tabla de segmentos es como un índice que le dice al sistema operativo qué partes del archivo cargar en memoria y con qué permisos (ejecución, lectura, escritura).
     phdr = (Elf64_Phdr *)(woody->addr + woody->ehdr->e_phoff);
     if (!is_safe_ptr(woody, phdr, woody->ehdr->e_phnum * sizeof(Elf64_Phdr)))
         return (-1);

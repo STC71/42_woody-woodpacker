@@ -15,8 +15,8 @@ Imagina nuestra carpeta `src/` como una línea de ensamblaje en una fábrica de 
                         v
              ¿Hay una 'Code Cave' suficiente?
                    /                    \
-                NO /                      \ SÍ
-                  v                        v
+               NO /                      \ SÍ
+                 v                        v
          [Abortar con Error]      [crypto.c: Generar Llave RC4]
                                            |
                                            v
