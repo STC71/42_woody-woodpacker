@@ -21,15 +21,15 @@ Funciona como un trucaje de magia con una baraja tradicional de 256 cartas.
 
 ```mermaid
 graph TD
-    subgraph KSA ["Fase 1: Inicialización de la Llave KSA"]
-        A["Array S de 256 Bytes 0-255"] --> B["Mezclar iterativamente S cruzándolo con Bytes de la Llave Secreta"]
-        B --> C["Estado KSA Permutado y Listo"]
+    subgraph KSA [Fase 1 - Inicialización de la Llave KSA]
+        A[Array S de 256 Bytes 0-255] --> B[Mezclar iterativamente S cruzándolo con Bytes de la Llave Secreta]
+        B --> C[Estado KSA Permutado y Listo]
     end
-    subgraph PRGA ["Fase 2: Generación Pseudoaletoria PRGA+XOR"]
-        C --> D["Extraer Bytes dinámicos de S basados en i, j"]
-        D --> E{"Byte Pseudoaleatorio Obtenido"}
-        E --> |XOR Matemático Invertible| F["Byte Original del ELF"]
-        F --> G["¡Byte Cifrado / Descifrado!"]
+    subgraph PRGA [Fase 2 - Generación Pseudoaletoria PRGA+XOR]
+        C --> D[Extraer Bytes dinámicos de S basados en i, j]
+        D --> E{Byte Pseudoaleatorio Obtenido}
+        E --> |XOR Matemático Invertible| F[Byte Original del ELF]
+        F --> G[Byte Cifrado / Descifrado]
     end
 ```
 
