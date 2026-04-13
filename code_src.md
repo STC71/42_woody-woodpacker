@@ -6,17 +6,33 @@ Imagina nuestra carpeta `src/` como una línea de ensamblaje en una fábrica de 
 
 ## Flujo de Ejecución (Visual)
 
-```mermaid
-graph TD
-    A[main.c - Clonar archivo a Memoria RAM] --> B[elf_parser.c - Analizar cabeceras ELF]
-    B --> C{Hay una Code Cave suficiente}
-    C -->|No| D[Abortar con Error]
-    C -->|Sí| E[crypto.c - Generar Llave RC4]
-    E --> F[crypto.c - Cifrar la sección .text]
-    F --> G[injector.c - Inyectar payload.bin en la Code Cave]
-    G --> H[injector.c - Parchear llave y offsets en el Payload]
-    H --> I[injector.c - Redirigir el Entry Point original al Payload]
-    I --> J[main.c - Volcar RAM a disco duro nuevo woody]
+```text
+        [main.c: Clonar archivo a Memoria RAM] 
+                        |
+                        v
+        [elf_parser.c: Analizar cabeceras ELF]
+                        |
+                        v
+             ¿Hay una 'Code Cave' suficiente?
+                   /                    \
+                NO /                      \ SÍ
+                  v                        v
+         [Abortar con Error]      [crypto.c: Generar Llave RC4]
+                                           |
+                                           v
+                             [crypto.c: Cifrar la sección .text]
+                                           |
+                                           v
+                 [injector.c: Inyectar payload.bin en la Code Cave]
+                                           |
+                                           v
+               [injector.c: Parchear llave y offsets en el Payload]
+                                           |
+                                           v
+             [injector.c: Redirigir el Entry Point original al Payload]
+                                           |
+                                           v
+                 [main.c: Volcar RAM a disco duro nuevo 'woody']
 ```
 
 ---

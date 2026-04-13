@@ -15,16 +15,32 @@ Como este polizón se inyecta literalmente en las venas del programa víctima, d
 
 Nuestro archivo `payload.s` ejecuta una coreografía estrictamente calculada:
 
-```mermaid
-graph TD
-    Start[Secuestro del Entry Point Víctima inicia el Payload] --> A[1. Push registers - Guardar estado original]
-    A --> B[2. Syscall Write - Imprimir ....WOODY....]
-    B --> C[3. Calcular coordenadas en memoria PIE relative to RIP]
-    C --> D[4. Leer Firma Mágica Inyectada por C]
-    D --> E[5. Inicializar PRGA con la Llave Secreta]
-    E --> F[5. Desencriptar código original vía XOR iterativo]
-    F --> G[6. Pop registers - Restaurar todos los registros de CPU]
-    G --> H[7. JMP - Saltar silenciosamente al OEP Original de la Víctima]
+```text
+   [Secuestro del Entry Point (Víctima inicia el Payload)]
+                              |
+                              v
+         [1. Push registers: Guardar estado original]
+                              |
+                              v
+         [2. Syscall Write: Imprimir '....WOODY....']
+                              |
+                              v
+    [3. Calcular coordenadas en memoria PIE relative to RIP]
+                              |
+                              v
+           [4. Leer Firma Mágica Inyectada por C]
+                              |
+                              v
+         [5. Inicializar PRGA con la Llave Secreta]
+                              |
+                              v
+      [5. Desencriptar código original vía XOR iterativo]
+                              |
+                              v
+    [6. Pop registers: Restaurar todos los registros de CPU]
+                              |
+                              v
+  [7. JMP: Saltar silenciosamente al OEP Original de la Víctima]
 ```
 
 ### 1. Guardar el Estado (El modo Sigilo)

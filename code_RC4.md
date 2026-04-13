@@ -19,18 +19,41 @@ Para lograrlo, aplicamos criptografía. Encadenamos todas las piezas del libro e
 
 Funciona como un trucaje de magia con una baraja tradicional de 256 cartas. 
 
-```mermaid
-graph TD
-    subgraph KSA [Fase 1 - Inicialización de la Llave KSA]
-        A[Array S de 256 Bytes 0-255] --> B[Mezclar iterativamente S cruzándolo con Bytes de la Llave Secreta]
-        B --> C[Estado KSA Permutado y Listo]
-    end
-    subgraph PRGA [Fase 2 - Generación Pseudoaletoria PRGA+XOR]
-        C --> D[Extraer Bytes dinámicos de S basados en i, j]
-        D --> E{Byte Pseudoaleatorio Obtenido}
-        E --> |XOR Matemático Invertible| F[Byte Original del ELF]
-        F --> G[Byte Cifrado / Descifrado]
-    end
+```text
++-------------------------------------------------------------+
+|                          FASE 1                             |
+|              Inicialización de la Llave (KSA)               |
++-------------------------------------------------------------+
+| [Array S de 256 Bytes 0-255]                                |
+|                 |                                           |
+|                 v                                           |
+| [Mezclar iterativamente S cruzándolo con la Llave Secreta]  |
+|                 |                                           |
+|                 v                                           |
+| [Estado KSA Permutado y Listo]                              |
++-------------------------------------------------------------+
+                              |
+                              v
++-------------------------------------------------------------+
+|                          FASE 2                             |
+|           Generación Pseudoaletoria (PRGA) + XOR            |
++-------------------------------------------------------------+
+| [Estado KSA]                                                |
+|                 |                                           |
+|                 v                                           |
+| [Extraer Bytes dinámicos de S basados en i, j]              |
+|                 |                                           |
+|                 v                                           |
+|    {Byte Pseudoaleatorio Obtenido}                          |
+|                 |                                           |
+|       (XOR Matemático Invertible)                           |
+|                 |                                           |
+|                 v                                           |
+|       [Byte Original del ELF]                               |
+|                 |                                           |
+|                 v                                           |
+|     ¡Byte Cifrado / Descifrado!                             |
++-------------------------------------------------------------+
 ```
 
 ### Fase 1: Mezclando el Mazo (KSA - Key-Scheduling Algorithm)
