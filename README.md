@@ -26,7 +26,7 @@ Para facilitar la comprensión técnica del proyecto, el código se ha documenta
 ## 🧪 Motor de Evaluación Interactivo
 
 El proyecto incorpora un potente evaluador automático (`test_auto.sh` y `test_eval.sh`) programado en Bash avanzado.
-*   Ofrece más de 20 tests exhaustivos de límites, cubriendo fugas de memoria (`valgrind`), gestión asíncrona de I/O, encriptación manual y seguridad (detección de cabeceras ELF maliciosas, `buffer overflows`, etc.).
+*   Despliega casi una **treintena de tests exhaustivos de límites (Stress Tests)**, cubriendo fugas de memoria (`valgrind`), gestión asíncrona de I/O contra *Short Reads*, corrupciones arquitectónicas ELF (Ataques *Big-Endian*, *String Table OOB*) y evasión activa de heurísticas de compilación avanzadas (Sábanas de NOPs y límites de *Red Zone* de la ABI).
 *   **Búsqueda Dinámica**: El evaluador hace búsquedas regex en directo usando *awk* para imprimir exactamente la línea de código C/ASM respectiva que entraña el código vital testeado ante tus ojos.
 
 ## 🎯 Tecnologías Empleadas
