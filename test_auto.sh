@@ -242,7 +242,7 @@ test_result $?
 
 echo "  9.2 - Archivo destino pre-existente y bloqueado (Imposible sobreescribir ./woody)."
 touch woody && chmod 000 woody
-./woody_woodpacker ./ls_test 2>&1 | grep -q "Error: No se pudo crear archivo resultante 'woody'"
+./woody_woodpacker ./ls_test 2>&1 | grep -q "Error: Cirugía fallida. No se pudo crear al paciente resultante 'woody'"
 test_result $?
 rm -f woody # Forzamos borrado para continuar
 
@@ -273,8 +273,50 @@ gcc -O3 -falign-functions=2048 extreme_dummy.c -o extreme_dummy
 if grep -q "Survivor dummy" dummy10.log; then test_result 0; else test_result 1; fi
 pause_for_user
 
+pause_for_user
+
+# ---------------------------------------------------------
+echo -e "${C_B}▶ TEST 11: DEATHMARCH EXTREME (FUZZING & EDGE CASES) ☠️${C_DF}"
+echo -e "${C_Y}OBJETIVO:${C_DF} Empujar el empaquetador a escenarios límites irreales (Tiny ASM, Huge Files, Stripped, Double Infección)."
+echo -e "${C_Y}MÉTODO:${C_DF} Inyectar diferentes binarios especiales y monitorizar grácil manejo de leaks con Valgrind."
+
+echo "  11.1 - Tiny ASM Binario (Sin libc)."
+cat << 'ASM_EOF' > tiny.s
+global _start
+section .text
+_start:
+    mov rax, 60
+    xor rdi, rdi
+    syscall
+ASM_EOF
+nasm -f elf64 tiny.s -o tiny.o
+ld tiny.o -o tiny_bin
+valgrind --leak-check=full --error-exitcode=42 ./woody_woodpacker tiny_bin > /dev/null 2>&1
+# woody might fail to find a code cave as the file is too small, but it shouldn't leak memory or crash!
+if [ $? -ne 42 ]; then test_result 0; else test_result 1; fi
+
+echo "  11.2 - Archivo Titánico Corrupto (50MB aleatorios)."
+dd if=/dev/urandom of=huge_file.bin bs=1M count=50 > /dev/null 2>&1
+valgrind --leak-check=full --error-exitcode=42 ./woody_woodpacker huge_file.bin > /dev/null 2>&1
+if [ $? -ne 42 ]; then test_result 0; else test_result 1; fi
+
+echo "  11.3 - Binario Stripped (Sin tabla de símbolos)."
+cp /bin/ls ./ls_stripped
+strip ./ls_stripped
+valgrind --leak-check=full --error-exitcode=42 ./woody_woodpacker ./ls_stripped > /dev/null 2>&1
+if [ $? -ne 42 ]; then test_result 0; else test_result 1; fi
+
+echo "  11.4 - Doble Infección (Infectando el propio virus woody)."
+./woody_woodpacker /bin/ls > /dev/null 2>&1
+valgrind --leak-check=full --error-exitcode=42 ./woody_woodpacker ./woody > /dev/null 2>&1
+if [ $? -ne 42 ]; then test_result 0; else test_result 1; fi
+
+# Limpieza final adicional
+rm -f tiny.s tiny.o tiny_bin huge_file.bin ls_stripped woody
+
+
 # Limpieza de basura
-rm -f ./ls_test dummy.txt orig_out.txt infect_out.txt clean_infect.txt param_out.log woody_out.log key_out1.txt key_out2.txt ./woody empty_file 1byte_file trunc_elf corrupt_shoff_elf no_perm_elf valgrind_fds.log extreme_dummy.c extreme_dummy dummy10.log
+rm -f ./ls_test dummy.txt orig_out.txt infect_out.txt clean_infect.txt param_out.log woody_out.log key_out1.txt key_out2.txt ./woody empty_file 1byte_file trunc_elf corrupt_shoff_elf no_perm_elf valgrind_fds.log extreme_dummy.c extreme_dummy dummy10.logrm -f tiny.s tiny.o tiny_bin huge_file.bin ls_stripped woody
 
 echo -e "========================================================="
 echo -e "RESULTADOS TOTALES: ${C_G}${PASSED_TESTS}${C_DF} Aprobados / ${C_R}${FAILED_TESTS}${C_DF} Fallados (de ${TOTAL_TESTS})"
