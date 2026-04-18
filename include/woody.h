@@ -30,7 +30,7 @@
  * Un virus necesita saber orientarse entre las entrañas del ordenador.
  * Esta estructura es como la pizarra al pie de cama de un paciente. Todo
  * analista ("elf_parser"), anestesista ("crypto") o cirujano ("injector")
- * la consulta para saber en qué punto actuar y qué coordenadas usar.
+ * la consultará para saber en qué punto actuar y qué coordenadas usar.
  * ========================================================================== */
 typedef struct s_woody
 {

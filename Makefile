@@ -97,15 +97,21 @@ eval: all
 	@./test_eval.sh
 
 help:
+	@echo ""
 	@echo "$(AZUL)$(NEGRITA)========================================================================$(RESET)"
 	@echo "$(AZUL)$(NEGRITA)                 🛡️  WOODY WOODPACKER - AYUDA DE MAKE 🛡️                  $(RESET)"
 	@echo "$(AZUL)$(NEGRITA)========================================================================$(RESET)"
+	@echo ""
 	@echo "$(VERDE)Comandos Disponibles:$(RESET)"
+	@echo ""
 	@echo "  $(CIAN)make help$(RESET)        - Muestra este menú de ayuda (comportamiento por defecto)."
+	@echo ""
 	@echo "  $(CIAN)make all$(RESET)         - Compila todo el proyecto en modo estricto."
+	@echo "  $(CIAN)make re$(RESET)          - Recompila el proyecto."
+	@echo ""
 	@echo "  $(CIAN)make clean$(RESET)       - Elimina archivos obj/ y payload.bin crudos."
 	@echo "  $(CIAN)make fclean$(RESET)      - Ejecuta clean + borra woody_woodpacker y clones."
-	@echo "  $(CIAN)make re$(RESET)          - Recompila el proyecto."
+	@echo ""
 	@echo "  $(CIAN)make test$(RESET)        - Ejecuta test_auto.sh con batería exhaustiva."
 	@echo "  $(CIAN)make eval$(RESET)        - Ejecuta test_eval.sh en modo evaluación guiada."
 	@echo ""
