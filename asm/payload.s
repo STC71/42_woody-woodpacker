@@ -17,6 +17,8 @@ _start:
     ; ==========================================================================
     ; FASE 1: GUARDAR EL MUNDO (PUSH)
     ; ==========================================================================
+    ; Reservar espacio ya NO es necesario porque usamos la Red Zone (RSP negativo)
+    
     ; Para que la víctima no sospeche nada ni crashee, debemos preservar la 
     ; configuración exacta de cómo estaban los registros del procesador (RDI, 
     ; RSI, RAX...) justo en el momento en el que el sistema operativo iba a 
@@ -32,7 +34,8 @@ _start:
     push r8         ; Registros de propósito general extendidos (x86_64)
     push r9
     push r10
-    push r11
+    ; El registro r11 NO lo guardamos. Es volátil (destruido por syscall execve/sysret).
+    ; Nos regala exactamente 8 bytes en la Red Zone de 128 bytes perfectos (-128)
     push r12
     push r13
     push r14
@@ -121,6 +124,34 @@ ksa_loop:
     jl ksa_loop                  ; Seguir desordenando hasta 256
 
     ; ==========================================================================
+    ; MPROTECT: Hacking the self-defense W^X (Write XOR Execute)
+    ; ==========================================================================
+    ; Necesitamos poder escribir (desencriptar) la memoria de la sección .text
+    ; que el sistema la bloqueó como Solo-Lectura por defecto. Usamos mprotect.
+    push rdi                     ; ¡SALVAR RDI! (Puntero a nuestro array S RC4)
+    push rsi                     ; Salvar rsi
+    
+    mov rdi, r14                 ; param 1: Dirección original (debe alinearse)
+    mov rsi, r15                 ; param 2: Tamaño original
+    
+    ; mprotect exige page_size align (and rdi, ~0xFFF)
+    mov r8, rdi
+    and rdi, -4096               ; 0xFFFFFFFFFFFFF000 (Redondeo hacia abajo a 4KB)
+    sub r8, rdi                  ; offset = dirección original - alineada
+    add rsi, r8                  ; Ampliar el tamaño por el desplazamiento
+
+    mov rax, 10                  ; 10 = ID Syscall mprotect
+    mov rdx, 7                   ; 7 = PROT_READ (1) | PROT_WRITE (2) | PROT_EXEC (4)
+    push rcx                     ; rcx se destruye en syscall
+    push r11                     ; r11 se destruye en syscall
+    syscall
+    pop r11
+    pop rcx
+    
+    pop rsi                      ; Restaurar rsi
+    pop rdi                      ; Restaurar RDI (Apunta de nuevo a nuestra baraja S)
+
+    ; ==========================================================================
     ; FASE 6: PRGA - DESENCRIPTADO AL VUELO IN-SITU (XOR Mágico)
     ; ==========================================================================
     ; Ahora recorremos el código bloqueado del programa original byte a byte 
@@ -165,13 +196,37 @@ prga_done:
     add rsp, 256                 
     
     ; ==========================================================================
+    ; MPROTECT RESTORE: Curación Total y Sigilio
+    ; ==========================================================================
+    ; Para no dejar rastro al antivirus (E.D.R.), le devolvemos los permisos RX 
+    ; limpios a la sección desinfectada. ¡Es como si el virus jamás hubiera pasado!
+    mov rdi, r14
+    mov rsi, r15
+    mov r8, rdi
+    and rdi, -4096
+    sub r8, rdi
+    add rsi, r8
+
+    mov rax, 10                  ; mprotect syscall
+    mov rdx, 5                   ; 5 = PROT_READ (1) | PROT_EXEC (4)
+    push rcx
+    push r11
+    syscall
+    pop r11
+    pop rcx
+
+    ; ==========================================================================
     ; FASE 7: CALCULAR EL OEP (Original Entry Point)
     ; ==========================================================================
     ; Ya hemos arreglado el programa víctima. Ahora hay que averiguar cuál era
     ; su puerta de entrada original para empujar la ejecución hacia allí.
     mov r13, [r12 + 32]          ; Leemos el offset del Original Entry Point
     lea r14, [r12 + r13]         ; Calculamos su dirección absoluta real en RAM
-    mov [rbp + jmp_dest - get_rip], r14 ; La escribimos en la variable de salto final
+    
+    ; Guardamos el OEP sigilosamente bajo el último registro usando la Red Zone exacta de la pila original.
+    ; Esto está en rsp - 8 respecto AL RSP ACTUAL (128 bytes exactos por debajo de la pila original).
+    ; ¡100% legal contra la ABI de System V AMD64 (Límite: -128 bytes)! No hay Heisenbugs aquí.
+    mov [rsp - 8], r14
 
     ; ==========================================================================
     ; FASE 8: RESTAURAR EL MUNDO (POP) Y EL BORRADO DE HUELLAS
@@ -183,7 +238,7 @@ prga_done:
     pop r14
     pop r13
     pop r12
-    pop r11
+    ; No poppeamos r11, deliberadamente sacrificado para esconder nuestro OEP
     pop r10
     pop r9
     pop r8
@@ -197,23 +252,24 @@ prga_done:
     popf                         ; Lo último es restaurar los Flags inalterados.
 
     ; ==========================================================================
-    ; FASE 8: EL SALTO INCONDICIONAL (JMP) AL PROGRAMA REAL
+    ; FASE 9: EL SALTO INCONDICIONAL Y SEGURO (JMP MÁGICO) AL PROGRAMA REAL
     ; ==========================================================================
-    ; Y con este simple salto "JMP", nos transportamos mágicamente a las entrañas
-    ; sanas del programa original. ¡Misión cumplida!
-    jmp qword [rel jmp_dest]
-
-jmp_dest: dq 0                   ; Aquí guardamos temporalmente el OEP real.
+    ; Cuando todo se ha desapilado, la pila (rsp) vuelve a ser EXAMINABLEMENTE igual
+    ; que la original (con los argumentos del sistema "argc" y "argv" intactos).
+    ; No podemos usar RET porque eso sacaría de la pila argumentos reales.
+    ; Usamos un salto incondicional transparente leyendo el r14 (OEP) escondido
+    ; profundamente en nuestra Red Zone (-128 bytes de distancia exactos de la ABI). ¡Sigilo Puro y Matemático!
+    jmp qword [rsp - 128]
 
 ; ==============================================================================
 ; FIRMA MÁGICA Y VARIABLES HUECAS
 ; ==============================================================================
 ; Esto no son instrucciones para procesar, son "Agujeros" que nuestro programa 
 ; en Lenguaje C rellenará obligatoriamente a la fuerza cuando inyecte este código. 
-; Los 0x111... son simplemente un patrón hiper-fácil de buscar con el C (strnstr).
+; Los 0x1122... son simplemente un patrón hiper-fácil de buscar con el C (strnstr).
 align 8
 vars:
-    rel_text    dq 0x1111111111111111   ; [0]  Distancia desde vars a la sección .text encriptada
+    rel_text    dq 0x1122334455667788   ; [0]  Distancia desde vars a la sección .text encriptada
     text_size   dq 0x2222222222222222   ; [8]  Número total de bytes a desencriptar
     key1        dq 0x3333333333333333   ; [16] Primera mitad de la Llave RC4 secreta
     key2        dq 0x4444444444444444   ; [24] Segunda mitad de la Llave RC4 secreta

@@ -34,13 +34,13 @@ Nuestro archivo `payload.s` ejecuta una coreografía estrictamente calculada:
          [5. Inicializar PRGA con la Llave Secreta]
                               |
                               v
-      [5. Desencriptar código original vía XOR iterativo]
+      [6. Desencriptar código original vía XOR iterativo]
                               |
                               v
-    [6. Pop registers: Restaurar todos los registros de CPU]
+    [7. Pop registers: Restaurar todos los registros de CPU]
                               |
                               v
-  [7. JMP: Saltar silenciosamente al OEP Original de la Víctima]
+  [8. JMP ciego (Red Zone Stack): Saltar al OEP Original de la Víctima]
 ```
 
 ### 1. Guardar el Estado (El modo Sigilo)
@@ -62,7 +62,11 @@ El archivo en ensamblador tiene preparadas unas "Variables Huecas" o una **Firma
 * La **llave secreta** que necesita para abrirla.
 * Las coordenadas de la cabina de control original.
 
-### 5. Desencriptar la lógica original (Misión Principal)
+### 5. Restaurar Permisos de Ejecución (El Hacker W^X - mprotect)
+Por razones de seguridad, los sistemas operativos modernos (como SELinux) bloquean las zonas de código como "Solo-Lectura" (RX). Si nuestro polizón intentara auto-desencriptar el código directamente, el Kernel lo asesinaría por violación de segmento. 
+Para burlar esto de forma indetectable (sin dejar banderas sospechosas en el archivo físico), nuestro ensamblador invoca la Syscall `mprotect` *al vuelo*. Cambia temporalmente los permisos de la RAM a Escritura (`RWX`), realiza el descifrado, y luego vuelve a bloquear la zona como Solo-Lectura (`RX`) para no dejar ningún rastro en memoria.
+
+### 6. Desencriptar la lógica original (Misión Principal)
 El código de la aplicación original está protegido por un candado criptográfico rápido y eficiente llamado **RC4** (Rivest Cipher 4). Es un algoritmo de cifrado de flujo ideal para malware porque ocupa muy poco espacio en lenguaje máquina.
 
 Nuestro polizón extrae la llave secreta y ejecuta la fase de desencriptado a la velocidad del rayo, directamente sobre la memoria RAM. Para lograr esto, utiliza el núcleo operativo del cifrado RC4, conocido como **PRGA** (*Pseudo-Random Generation Algorithm* o Algoritmo de Generación Pseudoaleatoria):
@@ -70,11 +74,11 @@ Nuestro polizón extrae la llave secreta y ejecuta la fase de desencriptado a la
 * **¿Cómo funciona el PRGA?** Imagina una batidora matemática. Toma la llave secreta inyectada previamente y la utiliza como semilla para generar un flujo infinito y aparentemente caótico de bytes (una corriente pseudoaleatoria).
 * **El truco final (XOR):** El programa ensamblador toma cada byte del código original que estaba encriptado y lo combina matemáticamente (usando la operación binaria *XOR*) con un byte de esta corriente caótica generada por el PRGA. Como la operación XOR es reversible, al mezclar el código cifrado con la secuencia correcta, las instrucciones originales de la víctima reaparecen mágicamente en la memoria, listas para ser ejecutadas.
 
-### 6. Borrar sus huellas
+### 7. Borrar sus huellas
 Una vez descifrado el programa original, el polizón restaura toda la "copia de seguridad" de los mandos de la cabina que hizo en el Paso 1 (`pop` de los registros).
 
-### 7. El Salto Incondicional (Retorno a la normalidad)
-El último paso de nuestro código es un salto, comando `jmp` (Jump), dictándole a la computadora: *"Ve al Punto de Entrada Original (OEP) del programa"*. El tren de pasajeros continúa su recorrido de forma natural, sin que los usuarios noten absolutamente nada anormal, salvo el mensaje en la consola.
+### 8. El Salto Incondicional (Retorno a la normalidad)
+El último paso de nuestro código es un salto, comando `jmp` (Jump), dictándole a la computadora: *"Ve al Punto de Entrada Original (OEP) del programa"*. El problema aquí es cómo saltar al OEP sin manchar la pila de memoria (que debe quedar exactamente igual, con variables como `argc/argv` listas para el programa original). Nuestro polizón hace un truco de hechicería de nivel bajo usando la **"Red Zone"** del estándar System V AMD64 ABI, guardando la dirección de retorno en el límite máximo matemático permitido de **128 bytes por DEBAJO** de la pila original (`[rsp - 128]`). Sacrificando de forma selectiva un registro irrelevante como `r11` (clobbered por _syscalls_), conseguimos una salvaguarda de OEP a prueba del _scheduler_ del Kernel. De este modo, la memoria está inmaculada al ejecutar el salto y es invulnerable a corrupciones aleatorias (_Heisenbugs_). El tren de pasajeros continúa su recorrido natural.
 
 ---
 

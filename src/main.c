@@ -56,6 +56,13 @@ static int check_elf_format(t_woody *woody)
         return (-1);
     }
 
+    // 3.5. Comprobar Little Endian (El procesador leería los Offsets al revés si es Big Endian)
+    if (woody->ehdr->e_ident[EI_DATA] != ELFDATA2LSB)
+    {
+        fprintf(stderr, "Error: Archivo en formato Big-Endian. Peligro de corrupción de Offsets. Abortado.\n");
+        return (-1);
+    }
+
     // 4. Comprobar que el tipo de procesador es compatible (x86_64 = ordenadores modernos comunes)
     if (woody->ehdr->e_machine != EM_X86_64)
     {

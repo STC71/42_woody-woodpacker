@@ -1,3 +1,4 @@
+#include <errno.h>
 #include "woody.h"
 
 /* ==========================================================================
@@ -36,7 +37,39 @@ int generate_and_inject_payload(t_woody *woody)
     fstat(fd, &st);
     payload_size = st.st_size;
     payload = malloc(payload_size);
-    read(fd, payload, payload_size);
+    if (!payload)
+    {
+        fprintf(stderr, "Error: Insuficiente memoria (OOM) para el payload.\n");
+        close(fd);
+        return (-1);
+    }
+    
+    // Leer el payload con cuidado, gestionando lecturas cortas e interrupciones (EINTR).
+    ssize_t total_read = 0;
+    ssize_t bytes_read;
+    while (total_read < (ssize_t)payload_size)
+    {
+        bytes_read = read(fd, payload + total_read, payload_size - total_read);
+        if (bytes_read < 0)
+        {
+            if (errno == EINTR)
+                continue;
+            fprintf(stderr, "Error: Fallo crítico de I/O al leer el payload.\n");
+            free(payload);
+            close(fd);
+            return (-1);
+        }
+        if (bytes_read == 0)
+            break; // EOF prematuro
+        total_read += bytes_read;
+    }
+    if (total_read != (ssize_t)payload_size)
+    {
+        fprintf(stderr, "Error: Lectura incompleta del payload (Short read).\n");
+        free(payload);
+        close(fd);
+        return (-1);
+    }
     close(fd);
 
     // 2. COMPROBAR RECHAZO (¿Cabe la prótesis en el hueco del paciente?)
@@ -49,18 +82,19 @@ int generate_and_inject_payload(t_woody *woody)
         return (-1);
     }
 
-    // 3. INMUNOSUPRESORES: Dar permiso de ESCRITURA (PF_W) al segmento de memoria.
-    // El SO Linux por defecto marca las zonas de código como "Read-Exec" (RX).
-    // Si nuestro Payload intenta auto-desencriptarse (escribirse a sí mismo) en 
-    // una zona sin permisos de escritura (W), el Kernel lo asesinaría por "Segfault".
-    woody->target_segment->p_flags |= PF_W;
+    // 3. OMITIDO INTENCIONALMENTE: No dar permiso de Escritura estático (PF_W).
+    // Antes nuestro proyecto marcaba todo el segmento ejecutable como Write+Exec.
+    // Esto disparaba las alarmas de W^X de los sistemas operativos (SELinux/PaX).
+    // Ahora, nuestro virus es más inteligente e invoca la syscall mprotect()
+    // en tiempo de ejecución (payload.s) para modificarse sigilosamente a sí mismo.
+    // woody->target_segment->p_flags |= PF_W; <-- ELIMINADO para ser un 125% PRO.
 
-    // 4. LOCALIZAR LOS TORNILLOS (Buscar la firma 0x1111111111111111)
-    // En nuestro ensamblador dejamos una marca visual tonta (1111...) para 
-    // saber exactamente dónde inyectar nuestras distancias matemáticas y claves.
+    // 4. LOCALIZAR LOS TORNILLOS (Buscar la firma 0x1122334455667788)
+    // En lugar de una simple firma estúpida que podría coincidir con código real,
+    // buscamos nuestro anclaje de 64-bits diseñado con entropía determinista.
     for (size_t i = 0; i < payload_size - 8; i++)
     {
-        if (*(uint64_t *)(payload + i) == 0x1111111111111111)
+        if (*(uint64_t *)(payload + i) == 0x1122334455667788)
         {
             patch_ptr = (uint64_t *)(payload + i);
             break;

@@ -24,8 +24,22 @@
  */
 static int is_safe_ptr(t_woody *woody, void *ptr, size_t size_needed)
 {
+    // Prevenir underflow: el puntero no puede ser inferior a la base del mapa
+    if ((uint8_t *)ptr < (uint8_t *)woody->addr)
+    {
+        fprintf(stderr, "Error: Puntero malicioso por debajo del inicio del archivo\n");
+        return (0);
+    }
+    
+    // Prevenir overflow aritmético: asegurar que ptr + size no dé la vuelta
+    if ((uintptr_t)ptr + size_needed < (uintptr_t)ptr)
+    {
+        fprintf(stderr, "Error: Desbordamiento de enteros detectado\n");
+        return (0);
+    }
+
     // Si la "dirección + lo que queremos leer" supera el Final del Archivo (addr + size)...
-    if ((void *)ptr + size_needed > woody->addr + woody->size)
+    if ((uint8_t *)ptr + size_needed > (uint8_t *)woody->addr + woody->size)
     {
         fprintf(stderr, "Error: Diseño ELF corrupto detectado (Acceso fuera de límites)\n");
         return (0); // ¡Peligro, abortar misión!
@@ -66,8 +80,12 @@ static int find_text_section(t_woody *woody)
     // 3. Ya teniendo diccionario en mano, recorremos hoja por hoja (todas las secciones).
     for (int i = 0; i < woody->ehdr->e_shnum; i++)
     {
-        // ¿El nombre de la sección número "i" es exactamente igual a ".text"?
-        if (strcmp(strtab + shdr[i].sh_name, ".text") == 0)
+        // Vulnerabilidad evitada: el índice del diccionario no puede superar el propio tamaño del diccionario.
+        if (shdr[i].sh_name >= strtab_sh->sh_size)
+            continue; // Atroz corrupción en sh_name dictada por ELF corrupto.
+
+        // ¿El nombre de la sección número "i" es exactamente igual a ".text"? (Seguro con strncmp limitando los carácteres)
+        if (strncmp(strtab + shdr[i].sh_name, ".text", 6) == 0)
         {
             woody->text_section = &shdr[i]; // ¡Encontrada! Guardamos las coordenadas en el expediente médico.
             printf("Encontrada sección: .text. Offset: 0x%lx, Tamaño: 0x%lx\n", 
@@ -129,15 +147,24 @@ static int find_code_cave(t_woody *woody)
     }
 
     lowest_next_offset = woody->size;
-    // 2. Ahora que tenemos el Segmento Ejecutable, ¿cuánto espacio libre 
-    //    tenemos hasta chocar contra el inicio del *siguiente* segmento útil?
+    // 2. Ahora que tenemos el Segmento Ejecutable, ¿cuánto espacio libre
+    //    tenemos hasta chocar contra el inicio del *siguiente* segmento tanto
+    //    física como virtualmente en RAM?
     for (int i = 0; i < woody->ehdr->e_phnum; i++)
     {
         next_phdr = &phdr[i];
+        // Comprobar la colisión física en el disco (Offset)
         if (next_phdr->p_offset > woody->target_segment->p_offset && 
             next_phdr->p_offset < lowest_next_offset)
         {
             lowest_next_offset = next_phdr->p_offset;
+        }
+        
+        // Evitar desalineamientos drásticos de paginación virtual (Memoria)
+        if (next_phdr->p_vaddr > woody->target_segment->p_vaddr && 
+            next_phdr->p_vaddr - woody->target_segment->p_vaddr + woody->target_segment->p_offset < lowest_next_offset)
+        {
+            lowest_next_offset = next_phdr->p_vaddr - woody->target_segment->p_vaddr + woody->target_segment->p_offset;
         }
     }
 
@@ -149,6 +176,22 @@ static int find_code_cave(t_woody *woody)
         woody->cave_size = lowest_next_offset - woody->cave_offset;
     else
         woody->cave_size = 0;
+
+    // Verificar iterativamente y exhaustivamente que la zona esté compuesta por bytes de relleno seguros (0x00 o NOPs 0x90/0xCC).
+    size_t zero_padding_size = 0;
+    uint8_t *cave_ptr = (uint8_t *)(woody->addr + woody->cave_offset);
+    while (zero_padding_size < woody->cave_size && 
+          (cave_ptr[zero_padding_size] == 0x00 || 
+           cave_ptr[zero_padding_size] == 0x90 || 
+           cave_ptr[zero_padding_size] == 0xCC))
+        zero_padding_size++;
+    
+    if (zero_padding_size < woody->cave_size)
+    {
+        printf("Advertencia: El hueco contiene datos basuras en %lu bytes. Ajustando tamaño de la cave a %lu bytes puros 0x00.\n", 
+               woody->cave_size, zero_padding_size);
+        woody->cave_size = zero_padding_size;
+    }
 
     printf("Encontrada Code Cave en Offset: 0x%lx con Capacidad: %lu bytes\n", 
            woody->cave_offset, woody->cave_size);

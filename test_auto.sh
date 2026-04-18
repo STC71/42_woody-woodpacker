@@ -188,7 +188,7 @@ echo -e "${C_B}▶ TEST 8: CORRUPCIÓN EXTREMA Y EDGE CASES (DEVIL'S ADVOCATE)${
 echo -e "${C_Y}COMANDO:${C_DF} ./woody_woodpacker <invalid/corrupted_files>"
 echo -e "${C_Y}OBJETIVO:${C_DF} Empujar el parser ELF fuera de los límites de memoria con archivos hostiles deliberadamente fabricados."
 echo -e "${C_Y}MÉTODO:${C_DF} Truncar cabeceras ELF y corromper punteros de offsets (e.g., apuntar shoff a la Luna)."
-find_code "Seguridad Matemática Avanzada" "is_safe_ptr|Corrupted ELF" src/elf_parser.c
+find_code "Seguridad Matemática Avanzada y Padding" "is_safe_ptr|Corrupted ELF|zero_padding_size" src/elf_parser.c
 echo -e "${C_Y}ESPERADO:${C_DF} Nuestra protección 'is_safe_ptr' en C detiene el mapeo ilegal antes de producir Core Dumps.\n"
 
 echo "  8.1 - Fichero vacío (0 bytes)."
@@ -207,14 +207,23 @@ test_result $?
 
 echo "  8.4 - ELF Header truncado (tamaño 60 bytes, es menor que struct Elf64_Ehdr)."
 dd if=/bin/ls of=trunc_elf bs=1 count=60 > /dev/null 2>&1
-./woody_woodpacker trunc_elf 2>&1 | grep -q -E "(v[áa]lid|mmap|error|Fall|Diseño)"
+./woody_woodpacker trunc_elf 2>&1 | grep -q -E "(v[áa]lid|mmap|error|Fall|Diseño|l[ií]mites)"
 test_result $?
 
 echo "  8.5 - Corrupción de Header: e_shoff apunta al infinito (OOB Memory Access)."
 # Cambiamos 4 bytes del offset e_shoff en la cabecera ELF para apuntar fuera del archivo.
 cp /bin/ls corrupt_shoff_elf
 printf '\xff\xff\xff\xff' | dd of=corrupt_shoff_elf bs=1 seek=40 count=4 conv=notrunc > /dev/null 2>&1
-./woody_woodpacker corrupt_shoff_elf 2>&1 | grep -q "Diseño ELF corrupto detectado"
+./woody_woodpacker corrupt_shoff_elf 2>&1 | grep -q "Diseño ELF corrupto detectado\|Desbordamiento de enteros\|fuera de limites"
+test_result $?
+
+echo "  8.6 - Corrupción de segmento (Comprobación de W^X security clearance)."
+# Aseguramnos que el inyector no deje el segmento ejecutable como Write+Exec en la cabecera
+echo "A" > 1byte_file # file dummy
+cp /bin/ls ./ls_test
+./woody_woodpacker ./ls_test > /dev/null
+# Validamos con readelf que el segmento LOAD que contiene la sección ejecutable (.text) NO tiene el flag de Escritura (W) activo estáticamente
+readelf -l ./woody | awk '/LOAD/ { print $0; getline; print $0 }' | grep "R E" > /dev/null
 test_result $?
 pause_for_user
 
@@ -242,8 +251,30 @@ valgrind --leak-check=full --track-fds=yes --error-exitcode=42 ./woody_woodpacke
 # Comprueba estrictamente si valgrind detecto fugas de descriptors que NO sean heredados del padre (bash/vscode)
 if grep -q "Open file descriptor" valgrind_fds.log && ! grep -q "<inherited from parent>" valgrind_fds.log; then test_result 1; else test_result 0; fi
 
+# ---------------------------------------------------------
+echo -e "${C_B}▶ TEST 10: INGENIERÍA SUB-CERO (NOP PADDING & HEISENBUG DEFIANCE)${C_DF}"
+echo -e "${C_Y}OBJETIVO:${C_DF} Poner a prueba la última muralla de tolerancias a nivel de Byte y Stack ABI (El 125%)."
+echo -e "${C_Y}MÉTODO:${C_DF} Compilar un binario pesadamente optimizado forzando alineamientos estrafalarios (-falign-functions=2048) de GCC para generar grandes sábanas de NOPs (0x90). Validar ejecución del virus inyectado contra colisiones del Red Zone."
+
+echo "  10.1 - Padding agresivo y alineación asimétrica de compilador (0x90/0xCC)"
+cat << 'EOF_C' > extreme_dummy.c
+#include <stdio.h>
+int f1() { return 1; }
+int f2() { return 2; }
+int main(int ac, char **av) {
+    if (ac > 100) return f1() + f2(); // Prevenir unrolling
+    printf("Survivor dummy!\n");
+    return 0;
+}
+EOF_C
+gcc -O3 -falign-functions=2048 extreme_dummy.c -o extreme_dummy
+./woody_woodpacker extreme_dummy > /dev/null
+./woody > dummy10.log 2>&1
+if grep -q "Survivor dummy" dummy10.log; then test_result 0; else test_result 1; fi
+pause_for_user
+
 # Limpieza de basura
-rm -f ./ls_test dummy.txt orig_out.txt infect_out.txt clean_infect.txt param_out.log woody_out.log key_out1.txt key_out2.txt ./woody empty_file 1byte_file trunc_elf corrupt_shoff_elf no_perm_elf valgrind_fds.log
+rm -f ./ls_test dummy.txt orig_out.txt infect_out.txt clean_infect.txt param_out.log woody_out.log key_out1.txt key_out2.txt ./woody empty_file 1byte_file trunc_elf corrupt_shoff_elf no_perm_elf valgrind_fds.log extreme_dummy.c extreme_dummy dummy10.log
 
 echo -e "========================================================="
 echo -e "RESULTADOS TOTALES: ${C_G}${PASSED_TESTS}${C_DF} Aprobados / ${C_R}${FAILED_TESTS}${C_DF} Fallados (de ${TOTAL_TESTS})"
