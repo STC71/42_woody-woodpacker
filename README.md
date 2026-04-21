@@ -17,7 +17,7 @@ Un *packer* toma un ejecutable original, extrae su código ensamblador, lo cifra
 
 ## 📁 Sistema de Documentación del Código
 
-Para facilitar la comprensión técnica del proyecto, el código se ha documentado extensivamente al español. Sumérgete en las piezas clave de Woody Woodpacker leyendo los siguientes artículos interactivos:
+Para facilitar la comprensión técnica del proyecto, el código se ha documentado extensivamente. Sumérgete en las piezas clave de Woody Woodpacker leyendo los siguientes artículos interactivos:
 *   [⚙️ La Maquinaria Principal (src/)](./code_src.md): Entiende el ciclo de vida del *Parser* ELF, el Cirujano de inyección y el Cerrajero criptográfico.
 *   [🧩 El Plano Arquitectónico (woody.h)](./code_inc.md): Un desglose completo de cómo funciona y almacena memoria el expediente principal de estructuras en C.
 *   [🧠 El Cerebro Inyectado (asm/)](./code_asm.md): Descubre la asombrosa rutina matemática de 7 pasos puramente desarrollada en lenguaje ensamblador x86_64 que viaja inyectada dentro del binario ajeno.
