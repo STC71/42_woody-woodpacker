@@ -1,5 +1,6 @@
 # PDFs (subject, evaluation, etc.)
-*.pdf
+en.evaluation.pdf
+en.subject.pdf
 
 # Archivos objeto y compilados
 *.o

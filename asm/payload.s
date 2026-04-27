@@ -1,6 +1,6 @@
-bits 64
-section .text
-global _start
+bits 64         ; Estamos en modo de 64 bits, lo que nos da acceso a los registros extendidos (r8, r9, r10...) y a la Red Zone de la pila.
+section .text   ; El código se inyectará en la sección .text de la víctima, así que aquí es donde escribimos nuestro payload.
+global _start   ; El punto de entrada de nuestro código. Cuando el sistema operativo ejecute el programa víctima, lo primero que hará será ejecutar este código antes que el original (gracias a la inyección en la Code Cave).
 
 ; ==============================================================================
 ; 🦠 WOODY WOODPACKER PAYLOAD - EL POLIZÓN EN ENSAMBLADOR

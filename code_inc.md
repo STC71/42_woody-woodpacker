@@ -1,5 +1,11 @@
 # 🧩 El Plano Arquitectónico: Desglosando `woody.h`
 
+<div align="center">
+<a href="https://youtu.be/Bn4Igs87_jY?si=q5dzrWtmcfjMoG3e">📺 Vídeo recomendado: Desmontando woody.h</a>
+</div>
+
+<br>
+
 Este documento explica la utilidad de nuestro archivo de cabecera (Header), el `woody.h`. 
 
 Para entenderlo fácilmente: Si el resto del código fueran los obreros y los ladrillos construyendo una casa, el archivo `.h` es el **Plano del Arquitecto**.

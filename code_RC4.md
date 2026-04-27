@@ -1,5 +1,11 @@
+
 # 🔐 Criptografía Dinámica: RC4 y el Arte del Empaquetado
 
+<div align="center">
+<a href="https://youtu.be/eCSEoSLKHeU?si=_AlpR0vL-hzV_XAj">📺 Vídeo recomendado: Fundamentos de RC4</a>
+</div>
+
+<br>
 En este proyecto, hemos implementado desde cero el cifrado algorítmico **RC4**. Pero, ¿qué significa realmente, cómo se come, y por qué es tan importante para ocultar nuestro código?
 
 ---

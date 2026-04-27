@@ -1,5 +1,11 @@
+
 # ⚙️ La Maquinaria Principal: Explorando la Carpeta `src`
 
+<div align="center">
+<a href="https://youtu.be/mAil_4RYWRM?si=bap9w0F-ncnxm2sV">📺 Vídeo recomendado: Flujo y arquitectura de proyectos C</a>
+</div>
+
+<br>
 Este documento explica de forma clara cómo interactúan los cuatro motores principales escritos en Lenguaje C que dictan toda la lógica del empaquetado de nuestro proyecto. 
 
 Imagina nuestra carpeta `src/` como una línea de ensamblaje en una fábrica de coches.
@@ -65,7 +71,7 @@ El trabajo final. Es el más delicado.
 * **El Secuestro:** Modifica la entrada principal del archivo original. Cambia el letrero de "Entrada" que llevaba al programa hacia el código original natural, y lo redirige hacia nuestra cueva.
 * **El Alta Médica y Sigilo W^X:** A diferencia de virus menos avanzados que modifican los permisos de ejecución del disco (`PF_W`) alertando a todos los antivirus, el cirujano vuelca todas las modificaciones quirúrgicas tal cual estaban, dejando que la criatura inyectada auto-modifique en RAM sus propios permisos al arrancar. Vuelca todo al disco duro, creando un nuevo ejecutable limpio (`woody`), con tamaño de sección alineado y preservando idénticamente los accesos del paciente original.
 
-n## 🛡️ Extra: Estándares Posix e Ingeniería Sub-Cero
+## 🛡️ Extra: Estándares Posix e Ingeniería Sub-Cero
 Para lograr un nivel 125% "Devil\'s Advocate" y construir un packer invencible:
 
 * **Blindaje en capa I/O:** `injector.c` ya no confía en llamadas POSIX inocentes. Protege contra posibles *OOM (Out-of-Memory)* verificando `malloc`, e implementa un bucle `read` reintrant resistente a interrupciones del scheduler (`EINTR`) o *Short Reads* en payloads pesados.

@@ -23,7 +23,7 @@ pause() {
 print_header() {
     clear
     echo -e "${C_B}╭────────────────────────────────────────────────────────────────────╮${C_DF}"
-    echo -e "${C_B}│${C_W}${BOLD}                  EVALUACIÓN DE WOODY WOODPACKER              ${C_DF}${C_B}│${C_DF}"
+    echo -e "${C_B}│${C_W}${BOLD}                  EVALUACIÓN DE WOODY WOODPACKER         ${C_DF}${C_B}│${C_DF}"
     echo -e "${C_B}│${C_DF}                         by sternero                                ${C_B}│${C_DF}"
     echo -e "${C_B}╰────────────────────────────────────────────────────────────────────╯${C_DF}\n"
 }
