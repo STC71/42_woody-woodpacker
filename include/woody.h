@@ -23,6 +23,7 @@
 # define ERR_NOT_64 "Error: El archivo no es un ELF de 64 bits\n"
 # define ERR_NOT_X86_64 "Error: El binario no tiene una arquitectura x86_64\n"
 # define ERR_NOT_EXEC "Error: El archivo no es un ejecutable ni un objeto compartido (shared object)\n"
+# define ERR_NOT_LITTLE_ENDIAN "Error: Archivo en formato Big-Endian. Peligro de corrupción de Offsets. Abortado.\n"
 
 /* ==========================================================================
  * 📋 EL EXPEDIENTE CLÍNICO: struct s_woody

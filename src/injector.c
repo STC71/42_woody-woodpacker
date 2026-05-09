@@ -147,6 +147,11 @@ int generate_and_inject_payload(t_woody *woody)
 
     // 9. DAR EL ALTA (Guardar en un nuevo archivo físico './woody')
     fd = open("woody", O_CREAT | O_TRUNC | O_WRONLY, woody->file_mode);
+        // O_CREAT: Crear el archivo si no existe, 
+        // O_TRUNC: Truncar el archivo a 0 bytes si ya existe, 
+        // O_WRONLY: Abrir para escritura.
+        // woody->file_mode: Usar los mismos permisos que el archivo original (ej. 755).
+
     if (fd < 0)
     {
         fprintf(stderr, "Error: Cirugía fallida. No se pudo crear al paciente resultante 'woody'\n");

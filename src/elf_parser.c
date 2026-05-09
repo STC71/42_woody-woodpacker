@@ -24,9 +24,21 @@
  */
 static int is_safe_ptr(t_woody *woody, void *ptr, size_t size_needed)
 {
-    // Prevenir underflow: el puntero no puede ser inferior a la base del mapa
+    // La función toma como argumentos un puntero a la estructura t_woody, 
+    // un puntero genérico (ptr) que queremos verificar y que recibirá la funcion con la dirección que queremos leer, 
+    // y el tamaño de bytes que necesitamos leer a partir de ese puntero (size_needed).
+    // El objetivo de esta función es asegurarse de que el puntero ptr es seguro de usar, es decir, que no apunta 
+    // a una dirección fuera de los límites del archivo mapeado en memoria.
+    // O sea prevenir underflows y overflows de memoria que podrían causar que el programa crashee o se comporte de 
+    // manera inesperada al intentar acceder a memoria no válida.
     if ((uint8_t *)ptr < (uint8_t *)woody->addr)
     {
+        // (uint8_t *)ptr es una conversión de tipo que interpreta el puntero ptr como un puntero a un byte (uint8_t).
+        // (uint8_t *)woody->addr es una conversión de tipo que interpreta el puntero woody->addr como un puntero 
+        // a un byte (uint8_t).
+        // Si el puntero ptr apunta a una dirección que es menor que la dirección base del archivo mapeado en memoria 
+        // (woody->addr), entonces ptr estaría apuntando a una dirección fuera de los límites del archivo, lo cual es peligroso. 
+        // En este caso, imprimimos un mensaje de error y devolvemos 0 para indicar que el puntero no es seguro.
         fprintf(stderr, "Error: Puntero malicioso por debajo del inicio del archivo\n");
         return (0);
     }
@@ -59,17 +71,44 @@ static int find_text_section(t_woody *woody)
 {
     Elf64_Shdr  *shdr;          // Puntero genérico a Secciones (Section Header)
     Elf64_Shdr  *strtab_sh;     // Puntero a la sección del Diccionario (String Table)
+    // Elf64_Shdr es una estructura que representa la cabecera de una sección en un archivo ELF que se define en <elf.h>. 
+    // Contiene información sobre la sección, como su nombre, tipo, tamaño, offset, etc.
     char        *strtab;        // El diccionario propiamente dicho que traduce los nombres.
+    // Los nombres de los punteros asignados a shdr, strtab_sh y strtab son variables locales que se utilizan para navegar 
+    // por la estructura del archivo ELF. Estos nombres son elegidos para reflejar su propósito.
+    // shdr se utiliza para recorrer la tabla de secciones y acceder a cada sección individualmente.
+    // strtab_sh se utiliza para acceder a la sección que contiene la tabla de cadenas (string table) que almacena los 
+    // nombres de las secciones.
+    // strtab es un puntero que apunta al inicio de la tabla de cadenas, lo que nos permite acceder a los nombres de las 
+    // secciones utilizando los índices proporcionados en la tabla de secciones.
 
     // 1. Ir a la Tabla General de Secciones (SHT - Section Header Table)
+    //  La tabla general de secciones es un índice que nos dice dónde están todas las secciones del archivo ELF.
+    //  secciones son como los capítulos de un libro, cada una con su propio propósito (código, datos, símbolos, etc.).
     shdr = (Elf64_Shdr *)(woody->addr + woody->ehdr->e_shoff);
+    // e_shoff es el offset (distancia en bytes desde el inicio del archivo hasta la tabla de secciones) 
+    // que se encuentra en la cabecera ELF (Elf64_Ehdr).
     if (!is_safe_ptr(woody, shdr, woody->ehdr->e_shnum * sizeof(Elf64_Shdr)))
         return (-1);
+        // Antes de acceder a la tabla de secciones, utilizamos la función is_safe_ptr para asegurarnos de que el puntero shdr
+        // es seguro de usar, es decir, que no apunta a una dirección fuera de los límites del archivo mapeado en memoria. 
+        // woody->ehdr->e_shnum es el número total de secciones en el archivo ELF, y sizeof(Elf64_Shdr) es el tamaño de cada 
+        // sección, por lo que estamos verificando que el rango de memoria que aborda la tabla de secciones es seguro de 
+        // acceder.
 
     // 2. Para saber cómo se llama cada Sección, no podemos leer el nombre directamente,
     //    tenemos que buscarlo en un diccionario (String Table) cuyo índice lo tiene la cabecera (e_shstrndx).
+    //  El diccionario es una sección especial que contiene los nombres de todas las demás secciones,
+    //  que se encuentra alojado dentro del mismo archivo ELF. 
+    //  La cabecera ELF tiene un campo llamado e_shstrndx que nos dice en qué sección se encuentra este diccionario.
+    //  e_shstrndx es un campo que se almacena en la cabecera ELF (Elf64_Ehdr) y que indica el índice de la sección 
+    //  que contiene la tabla de cadenas (string table) con los nombres de las secciones.
+    // Vulnerabilidad evitada: el índice del diccionario no puede superar el número total de secciones.
     if (woody->ehdr->e_shstrndx >= woody->ehdr->e_shnum)
         return (-1);
+        // Si el índice del diccionario (e_shstrndx) es mayor o igual al número total de secciones (e_shnum),
+        // entonces el archivo ELF está corrupto o mal formado, ya que estaría apuntando a una sección que no existe. 
+        // En este caso, devolvemos -1 para indicar un error.
     
     strtab_sh = &shdr[woody->ehdr->e_shstrndx];
     if (!is_safe_ptr(woody, woody->addr + strtab_sh->sh_offset, strtab_sh->sh_size))
@@ -177,7 +216,24 @@ static int find_code_cave(t_woody *woody)
     else
         woody->cave_size = 0;
 
-    // Verificar iterativamente y exhaustivamente que la zona esté compuesta por bytes de relleno seguros (0x00 o NOPs 0x90/0xCC).
+    // Verificar iterativamente y exhaustivamente que la zona esté compuesta por bytes de relleno seguros.
+    // Entendemos por seguros aquellos bytes que no contienen código ejecutable ni datos importantes, como ceros (0x00) 
+    // o instrucciones de NOP (0x90 en x86-64) o INT3 (0xCC), que a menudo se utilizan como relleno en los archivos ELF.
+    // 0x00 es un byte de relleno común que no representa una instrucción ejecutable = espacio vacio en memoria.
+    // 0x90 es la instrucción NOP (No Operation), que no hace nada y se utiliza a menudo como relleno para alinear el código.
+    // 0xCC es la instrucción INT3, que es una interrupción de depuración que también se utiliza a menudo como relleno 
+    // para marcar el final de una sección o para alinear el código. Una interrupción de depuración es una instrucción que, 
+    // cuando se ejecuta, provoca que el programa se detenga y permita al depurador tomar el control para inspeccionar el 
+    // estado del programa en ese momento.
+    // Estos bytes son considerados seguros para nuestro. 
+    // bytes de relleno no seguros serían aquellos que contienen código ejecutable o datos importantes, lo cual podría 
+    // causar un comportamiento inesperado o un crash si nuestro virus intenta escribir allí, por ejemplo:
+    // 0xC3 (ret - instrucción de retorno en x86-64)
+    // 0xE8 (call - instrucción de llamada a función en x86-64)
+    // 0xFF (jmp, call indirecto, etc. - instrucciones de salto o llamada en x86-64)
+    // 0x48 (prefijo de instrucciones de 64 bits en x86-64, como mov rax, rbx)
+    // 0x89 (mov r64, r64 - para mover datos entre registros o entre memoria y registros en x86-64)
+    // 0x50-0x5F (push/pop rax, rbx, etc. - instrucciones de manipulación de la pila en x86-64) ...
     size_t zero_padding_size = 0;
     uint8_t *cave_ptr = (uint8_t *)(woody->addr + woody->cave_offset);
     while (zero_padding_size < woody->cave_size && 
@@ -188,9 +244,17 @@ static int find_code_cave(t_woody *woody)
     
     if (zero_padding_size < woody->cave_size)
     {
+        // zero_padding_size es la cantidad de bytes de relleno seguros (0x00, 0x90 o 0xCC) que hemos encontrado en la cueva.
+        // Si zero_padding_size es menor que woody->cave_size, significa que no toda la cueva está compuesta por bytes de 
+        // relleno seguros, lo cual es un riesgo para nuestro virus. En este caso, ajustamos el tamaño de la cueva a la 
+        // cantidad de bytes de relleno seguros que hemos encontrado y emitimos una advertencia al usuario indicando que 
+        // la cueva contiene datos basura y que se ha ajustado el tamaño de la cueva a los bytes puros de relleno seguros.
         printf("Advertencia: El hueco contiene datos basuras en %lu bytes. Ajustando tamaño de la cave a %lu bytes puros 0x00.\n", 
                woody->cave_size, zero_padding_size);
         woody->cave_size = zero_padding_size;
+        // Redimensionamos la cueva al tamaño de bytes de relleno seguros encontrados.
+        // Esta situación no es ideal, pero es mejor tener una cueva más pequeña y segura que arriesgar un crash del programa 
+        // al intentar escribir en una zona con datos basura.
     }
 
     printf("Encontrada Code Cave en Offset: 0x%lx con Capacidad: %lu bytes\n", 

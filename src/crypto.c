@@ -27,8 +27,13 @@ int parse_custom_key(t_woody *woody, const char *hex_str)
     char   byte_str[3] = {0};
 
     // Para una clave firme de 128-bits, necesitamos exactamente 32 letras/números hex.
+    // Cada byte de la clave se representa con dos caracteres hexadecimales (00 a FF), 
+    // por lo que para una clave de 16 bytes (128 bits)
     if (len != 32)
     {
+        // Si la longitud de la cadena hexademinal que hemos extraido midiendo con strlen el string hex_str
+        // que tenemos en la función parse_custom_key no es igual a 32, entonces la clave proporcionada 
+        // por el usuario no tiene el peso exacto de 16 bytes (128 bits) que se requiere para nuestro proyecto, lo cual es un error. 
         fprintf(stderr, "Error: Bonus Custom Key debe constar exactamente de 32 caracteres hexadecimales (16 bytes).\n");
         return (-1);
     }
@@ -56,17 +61,26 @@ int parse_custom_key(t_woody *woody, const char *hex_str)
  * 🎲 generate_random_key (Forjando azar puro del Abismo)
  * --------------------------------------------------------
  * Si el usuario no trae llave, forjamos una totalmente impredecible. 
- * Los ordenadores apestan inventando el "azar absoluto", así que extraemos
+ * Los ordenadores fallan inventando el "azar absoluto", así que extraemos
  * magia entrópica termodinámica pura del núcleo de Linux: /dev/urandom.
  */
 void generate_random_key(t_woody *woody)
 {
+    // Para generar una clave aleatoria, intentamos leer directamente de /dev/urandom, 
+    // que es una fuente de datos aleatorios proporcionada por el sistema operativo Linux.
     int fd;
 
     woody->key_len = 16; // 128-Bits de pura paranoia
+    // Guardamos la longitud de la clave en la estructura t_woody para referencia futura, 
+    // aunque en este caso siempre será 16 bytes (128 bits), lo cual es un estándar común para claves simétricas de cifrado.
+    // Esto es útil para mantener la flexibilidad en caso de que en el futuro se quiera cambiar la longitud de la clave 
+    // sin tener que modificar otras partes del código que dependen de esta información.
     
     // Conectamos una manguera a la turbina del caos del Kernel
     fd = open("/dev/urandom", O_RDONLY);
+    // Como sabemos /dev/urandom es un dispositivo especial en sistemas Unix que proporciona datos aleatorios.
+    // Al abrirlo con O_RDONLY, estamos solicitando acceso de solo lectura a esta fuente de datos aleatorios, 
+    // lo que nos permitirá leer bytes aleatorios para generar nuestra clave criptográfica.
     if (fd < 0)
     {
         // ¡Plan B! Si la manguera se rompe, retrocedemos al patético pseudoazar.
@@ -80,10 +94,26 @@ void generate_random_key(t_woody *woody)
         // Rellenamos el molde de nuestra llave con el estruendo de urandom
         if (read(fd, woody->key, woody->key_len) != (ssize_t)woody->key_len)
         {
+            // read toma tres argumentos: el descriptor de archivo (fd), el buffer donde se almacenarán los datos (woody->key) 
+            // y la cantidad de bytes a leer (woody->key_len) su longitud (en este caso, 16 bytes para una clave de 128 bits).
+            // Si read es diferente de woody->key_len, significa que no se pudieron leer los 16 bytes completos de /dev/urandom, 
+            // lo cual es un error crítico para la generación de la clave, por lo que se emite una advertencia y se retrocede 
+            // al método de generación de clave menos seguro utilizando rand().
             fprintf(stderr, "Advertencia: Lectura de /dev/urandom fallida. Retrocediendo a rand().\n");
-            srand(time(NULL));
+            srand(time(NULL));  
+            // srand es una función que se utiliza para establecer la semilla del generador de números aleatorios en C.
+            // srand toma como argumento time(NULL), que devuelve el tiempo actual en segundos desde el Epoch (1 de enero de 1970).
+            // Al usar el tiempo actual como semilla, se garantiza que cada vez que se ejecute el programa, la secuencia 
+            // de números aleatorios generada por rand() será diferente, proporcionando una clave más segura.
             for (size_t i = 0; i < woody->key_len; i++)
                 woody->key[i] = rand() % 256;
+                // rand() es una función que genera un número pseudoaleatorio. Al usar rand() % 256, se obtiene un número 
+                // entre 0 y 255, lo que es adecuado para llenar cada byte de la clave con un valor aleatorio.
+                // La relación entre srand() y rand() es que srand() establece la semilla para el generador de números 
+                // aleatorios utilizado por rand(). Es como configurar el punto de partida para la secuencia de números 
+                // aleatorios que rand() generará. Si no se llama a srand(), rand() utilizará una semilla predeterminada, 
+                // lo que resultará en la misma secuencia de números aleatorios cada vez que se ejecute el programa, 
+                // lo cual no es deseable para la generación de claves criptográficas.
         }
         close(fd); // Cerramos el grifo
     }

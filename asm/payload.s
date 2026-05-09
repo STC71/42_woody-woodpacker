@@ -259,6 +259,10 @@ prga_done:
     ; No podemos usar RET porque eso sacaría de la pila argumentos reales.
     ; Usamos un salto incondicional transparente leyendo el r14 (OEP) escondido
     ; profundamente en nuestra Red Zone (-128 bytes de distancia exactos de la ABI). ¡Sigilo Puro y Matemático!
+    ; OEP = Original Entry Point (Punto de Entrada Original)
+    ; ABI = Application Binary Interface (para x86_64, el límite de la Red Zone es de -128 bytes)
+    ; red zone = área de la pila que no es tocada por el sistema operativo ni por las llamadas a funciones, 
+    ; perfecta para esconder datos sin riesgo de colisión.
     jmp qword [rsp - 128]
 
 ; ==============================================================================
