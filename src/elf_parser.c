@@ -225,7 +225,7 @@ static int find_code_cave(t_woody *woody)
     // para marcar el final de una sección o para alinear el código. Una interrupción de depuración es una instrucción que, 
     // cuando se ejecuta, provoca que el programa se detenga y permita al depurador tomar el control para inspeccionar el 
     // estado del programa en ese momento.
-    // Estos bytes son considerados seguros para nuestro. 
+    // Estos bytes son considerados seguros para nuestro proyecto. 
     // bytes de relleno no seguros serían aquellos que contienen código ejecutable o datos importantes, lo cual podría 
     // causar un comportamiento inesperado o un crash si nuestro virus intenta escribir allí, por ejemplo:
     // 0xC3 (ret - instrucción de retorno en x86-64)
