@@ -32,13 +32,16 @@ SRC         := $(wildcard $(SRC_DIR)/*.c)
 OBJ         := $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRC))
 
 STUB        := $(ASM_DIR)/payload.bin
+STUB_XOR    := $(ASM_DIR)/payload_xor.bin
+STUB32      := $(ASM_DIR)/payload32.bin
+STUB_XOR32  := $(ASM_DIR)/payload_xor32.bin
 
 # ==================== REGLAS PRINCIPALES ====================================
 
 .DEFAULT_GOAL := help
 .PHONY: all clean fclean re help test eval header footer
 
-all: header $(STUB) $(NAME) footer
+all: header $(STUB) $(STUB_XOR) $(STUB32) $(STUB_XOR32) $(NAME) footer
 
 header:
 	@echo "$(CIAN)$(NEGRITA)╔══════════════════════════════════════════════════════════════════════╗$(RESET)"
@@ -52,9 +55,23 @@ $(OBJ_DIR):
 
 # Regla de compilación de Assembly puro (Generación del binario parásito)
 $(STUB): $(ASM_DIR)/payload.s
-	@echo "$(MAGENTA)[+] Forjando el Parásito en Ensamblador (KSA + PRGA PIE Payload)...$(RESET)"
+	@echo "$(MAGENTA)[+] Forjando el Parásito en Ensamblador (RC4 PIE Payload)...$(RESET)"
 	@$(NASM) $(NASMFLAGS) $< -o $@
-	@echo "$(VERDE)  ✓ Payload binario generado en $@$(RESET)"
+	@echo "$(VERDE)  ✓ Payload RC4 binario generado en $@$(RESET)"
+
+$(STUB_XOR): $(ASM_DIR)/payload_xor.s
+	@echo "$(MAGENTA)[+] Forjando el Parásito Secundario en Ensamblador (XOR PIE Payload)...$(RESET)"
+	@$(NASM) $(NASMFLAGS) $< -o $@
+	@echo "$(VERDE)  ✓ Payload XOR binario generado en $@$(RESET)"
+$(STUB32): $(ASM_DIR)/payload32.s
+	@echo "$(MAGENTA)[+] Forjando el Parásito en Ensamblador 32-bits (RC4 PIE Payload)...$(RESET)"
+	@$(NASM) $(NASMFLAGS) $< -o $@
+	@echo "$(VERDE)  ✓ Payload RC4 32-bits generado en $@$(RESET)"
+
+$(STUB_XOR32): $(ASM_DIR)/payload_xor32.s
+	@echo "$(MAGENTA)[+] Forjando el Parásito Secundario en Ensamblador 32-bits (XOR PIE Payload)...$(RESET)"
+	@$(NASM) $(NASMFLAGS) $< -o $@
+	@echo "$(VERDE)  ✓ Payload XOR 32-bits generado en $@$(RESET)"
 
 # Compilación de los archivos C a Objeto (.o)
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
@@ -75,7 +92,7 @@ footer:
 clean:
 	@echo "$(ROJO)[-] Purgando la basura binaria temporal (.o) y el Payload crudo...$(RESET)"
 	@rm -rf $(OBJ_DIR)
-	@rm -f $(STUB)
+	@rm -f $(STUB) $(STUB_XOR)
 
 fclean: clean
 	@echo "$(ROJO)[-] Exterminando los ejecutables finales y logs de tests...$(RESET)"

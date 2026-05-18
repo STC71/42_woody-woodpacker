@@ -58,7 +58,7 @@ pause
 print_header
 echo -e "${C_B}▶ PASO 2: MANEJO DE FORMATO (Solo 64-bit ELF allowed)${C_DF}"
 echo "La hoja de corrección dice: Woody woodpacker DEBE empaquetar SOLO archivos binarios ELF x86_64."
-echo "Prueba: Intentamos empaquetar un script de texto y luego un ejecutable 32-bit."
+echo "Prueba: Intentamos empaquetar un script de texto y luego un ejecutable 32-bit (ahora sí lo soporta!)."
 
 echo -e "\n${C_Y}Ejecutando: ./woody_woodpacker test_auto.sh${C_DF}"
 find_code "Validación ELF y Arquitectura 64-bit" "valid ELF|64-bit ELF" src/elf_parser.c
@@ -115,10 +115,23 @@ echo "Si un compañero duda sobre el 125%, aquí se le demuestran los bonus cons
 echo "1. CIFRADO FUERTE (RC4): Has usado cifrado nativo simétrico de nivel corporativo en Assembly."
 echo "2. LLAVE ALEATORIA: URANDOM está implementado y es distinto cada vez."
 echo "3. LLAVES PARAMÉTRICAS: Puedes forzar un hash custom de 16 bytes (32 HexChars)."
+echo "4. ANTI-DEBUGGING: Evasión mediante la técnica de PTRACE_TRACEME para imposibilitar auditoría."
+echo "5. MULTI-ALGORITMO Criptográfico: Banderas --rc4 o --xor para inyectar diferentes rutinas."
 
 find_code "Bonus Setup (Argumentos urandom y custom keys)" "Bonus Custom Key|/dev/urandom|generate_key" src/main.c src/crypto.c
-echo -e "\n${C_Y}Ejecutando: ./woody_woodpacker test_file ABCDEF00ABCDEF00ABCDEF00ABCDEF00${C_DF}"
-./woody_woodpacker test_file ABCDEF00ABCDEF00ABCDEF00ABCDEF00
+find_code "Bonus Anti-Debugging (Evasión ptrace)" "PTRACE_TRACEME|radar_clear" asm/payload.s
+find_code "Bonus Multi-Algoritmo (--xor / --rc4)" "crypto_algo = 1|xor_cipher" src/main.c src/crypto.c
+
+echo -e "\n${C_Y}Ejecutando: ./woody_woodpacker --xor test_file${C_DF}"
+./woody_woodpacker --xor test_file
+
+echo -e "\n${C_Y}Prueba Práctica del Bonus Anti-Debugging:${C_DF}"
+echo "Test con file normal vs strace (debe fallar silenciosamente en strace):"
+./woody > normal_out.txt
+strace ./woody > strace_out.txt 2>&1
+echo "Strace log (búsqueda de exit code evasivo):"
+tail -n 3 strace_out.txt | grep "exit"
+rm -f normal_out.txt strace_out.txt
 
 echo -e "\n${C_C}¡Felicidades! Todos los criterios de la hoja de evaluación obligatorios y bonus se han cumplido al 125%.${C_DF}"
 

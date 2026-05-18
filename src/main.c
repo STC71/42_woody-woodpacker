@@ -38,8 +38,7 @@ static int check_elf_format(t_woody *woody)
     // 4. Mapeo específico según Arquitectura
     if (woody->is_32bit)
     {
-        if (woody->size < sizeof(Elf32_Ehdr))
-            return (-1);
+        if (woody->size < sizeof(Elf32_Ehdr)) { fprintf(stderr, ERR_NOT_ELF); return (-1); }
         woody->ehdr32 = (Elf32_Ehdr *)woody->addr;
         woody->orig_entry = woody->ehdr32->e_entry;
         
@@ -56,8 +55,7 @@ static int check_elf_format(t_woody *woody)
     }
     else
     {
-        if (woody->size < sizeof(Elf64_Ehdr))
-            return (-1);
+        if (woody->size < sizeof(Elf64_Ehdr)) { fprintf(stderr, ERR_NOT_ELF); return (-1); }
         woody->ehdr64 = (Elf64_Ehdr *)woody->addr;
         woody->orig_entry = woody->ehdr64->e_entry;
 

@@ -28,6 +28,9 @@ Nuestro archivo `payload.s` ejecuta una coreografía estrictamente calculada:
          [1. Push registers: Guardar estado original]
                               |
                               v
+         [1.5 Anti-Debugging: Detectar análisis con ptrace]
+                              |
+                              v
          [2. Syscall Write: Imprimir '....WOODY....']
                               |
                               v

@@ -1,6 +1,10 @@
-bits 64         ; Estamos en modo de 64 bits, lo que nos da acceso a los registros extendidos (r8, r9, r10...) y a la Red Zone de la pila.
-section .text   ; El código se inyectará en la sección .text de la víctima, así que aquí es donde escribimos nuestro payload.
-global _start   ; El punto de entrada de nuestro código. Cuando el sistema operativo ejecute el programa víctima, lo primero que hará será ejecutar este código antes que el original (gracias a la inyección en la Code Cave).
+bits 64         ; Estamos en modo de 64 bits, lo que nos da acceso a los 
+                ; registros extendidos (r8, r9, r10...) y a la Red Zone de la pila.
+section .text   ; El código se inyectará en la sección .text de la víctima, 
+                ; así que aquí es donde escribimos nuestro payload.
+global _start   ; El punto de entrada de nuestro código. Cuando el sistema operativo 
+                ; ejecute el programa víctima, lo primero que hará será ejecutar este 
+                ; código antes que el original (gracias a la inyección en la Code Cave).
 
 ; ==============================================================================
 ; 🦠 WOODY WOODPACKER PAYLOAD - EL POLIZÓN EN ENSAMBLADOR
@@ -105,54 +109,12 @@ get_rip:
     lea r10, [r12 + 16]          ; r10 = Puntero hacia nuestra Llave RC4 secreta de 16 bytes.
 
     ; ==========================================================================
-    ; FASE 5: PREPARAR LA BATIDORA DEL RC4 (Reservar Memoria en la Pila)
-    ; ==========================================================================
-    ; El algoritmo RC4 necesita una baraja de 256 cartas (256 bytes libres).
-    ; En lugar de usar 'malloc', simplemente le robamos espacio a la pila (Stack).
-    sub rsp, 256                 ; Hacemos hueco para 256 bytes.
-    mov rdi, rsp                 ; rdi = Nuestro Array 'S' (la baraja).
-
-    ; --- KSA (Key-Scheduling Algorithm) inicialización ---
-    ; Llenamos la baraja con cartas ordenadas (0, 1, 2, 3... hasta 255).
-    xor rcx, rcx                 ; rcx = 0
-ksa_init:
-    mov byte [rdi + rcx], cl     ; S[rcx] = rcx
-    inc rcx                      ; rcx++
-    cmp rcx, 256                 ; ¿Hemos llegado a 256?
-    jl ksa_init                  ; Si no, repite el bucle.
-
-    ; --- KSA mezcla ---
-    ; Desordenamos la baraja usando nuestra llave secreta de 16 bytes.
-    xor r8, r8                   ; j = 0
-    xor rcx, rcx                 ; i = 0
-ksa_loop:
-    movzx rax, byte [rdi + rcx]  ; rax = S[i]
-    
-    ; Obtener letra de la llave: key[i % 16]
-    mov rbx, rcx
-    and rbx, 15                  ; rbx = i % 16 (la and rápida para base 16)
-    movzx rdx, byte [r10 + rbx]  ; rdx = valor de la letra de la llave
-
-    ; Fórmula RC4 KSA: j = (j + S[i] + key[i % 16]) % 256
-    add r8, rax
-    add r8, rdx
-    and r8, 255                  
-    
-    ; Intercambio (Swap) entre S[i] y S[j]
-    movzx r9, byte [rdi + r8]
-    mov byte [rdi + rcx], r9b
-    mov byte [rdi + r8], al
-
-    inc rcx                      ; i++
-    cmp rcx, 256
-    jl ksa_loop                  ; Seguir desordenando hasta 256
-
-    ; ==========================================================================
+    ; FASE 5: XOR NO NECESITA KSA (Saltamos Baraja)
     ; MPROTECT: Hacking the self-defense W^X (Write XOR Execute)
     ; ==========================================================================
     ; Necesitamos poder escribir (desencriptar) la memoria de la sección .text
     ; que el sistema la bloqueó como Solo-Lectura por defecto. Usamos mprotect.
-    push rdi                     ; ¡SALVAR RDI! (Puntero a nuestro array S RC4)
+    ;
     push rsi                     ; Salvar rsi
     
     mov rdi, r14                 ; param 1: Dirección original (debe alinearse)
@@ -173,51 +135,32 @@ ksa_loop:
     pop rcx
     
     pop rsi                      ; Restaurar rsi
-    pop rdi                      ; Restaurar RDI (Apunta de nuevo a nuestra baraja S)
+    ;
 
     ; ==========================================================================
-    ; FASE 6: PRGA - DESENCRIPTADO AL VUELO IN-SITU (XOR Mágico)
+        ; ==========================================================================
+    ; FASE 6: DESENCRIPTADO AL VUELO IN-SITU (XOR)
     ; ==========================================================================
-    ; Ahora recorremos el código bloqueado del programa original byte a byte 
-    ; y lo desencriptamos matemáticamente directamente en la propia RAM.
-    xor rcx, rcx                 ; i = 0
-    xor r8, r8                   ; j = 0
-    xor rbx, rbx                 ; rbx servirá de contador principal (de 0 a text_size)
-prga_loop:
-    cmp rbx, r15                 ; ¿Hemos desencriptado ya todo el bloque?
-    jge prga_done                ; Si sí, ¡hemos terminado, volvemos a la normalidad!
-
-    inc rcx                      ; i = (i + 1)
-    and rcx, 255                 ; % 256
-
-    movzx rax, byte [rdi + rcx]  ; rax = S[i]
-    add r8, rax
-    and r8, 255                  ; j = (j + S[i]) % 256
-
-    ; Intercambio dinámico (Swap) de la baraja PRGA
-    movzx r9, byte [rdi + r8]
-    mov byte [rdi + rcx], r9b
-    mov byte [rdi + r8], al
-
-    add ax, r9w
-    and ax, 255                  ; (S[i] + S[j]) % 256
+    xor rbx, rbx                 ; rbx = counter
+xor_loop:
+    cmp rbx, r15                 ; Are we done?
+    jge prga_done
     
-    movzx rdx, byte [rdi + rax]  ; Letra mágica extraída de la baraja
-
-    ; ** EL MILAGRO (XOR) **
-    ; Tomamos el byte infectado de la aplicación víctima (r14 + rbx)...
+    ; get key byte: key[i % 16]
+    mov rcx, rbx
+    and rcx, 15
+    mov dl, byte [r10 + rcx]
+    
+    ; XOR the byte
     mov al, byte [r14 + rbx]
-    ; ... lo empujamos contra nuestra Letra Mágica (XOR)...
     xor al, dl
-    ; ... y sobrescribimos el hueco de la memoria con el código natural ya limpio.
     mov byte [r14 + rbx], al
-
-    inc rbx                      ; Siguiente byte del programa original
-    jmp prga_loop
-
+    
+    inc rbx
+    jmp xor_loop
 prga_done:
     ; Termina el cifrado. Devolvemos los 256 bytes que la quitamos a la pila al principio.
-    add rsp, 256                 
+    ;                 
     
     ; ==========================================================================
     ; MPROTECT RESTORE: Curación Total y Sigilio

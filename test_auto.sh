@@ -41,11 +41,9 @@ test_result() {
 }
 
 pause_for_user() {
-    echo -e "\n${C_C}>> Pulsa [ENTER] para continuar al siguiente test...${C_DF}"
-    # read -r
-    clear
-    print_header
+    return 0
 }
+    # read -r
 
 find_code() {
     local label=$1
@@ -139,8 +137,8 @@ echo "Hola Mundo" > dummy.txt
 ./woody_woodpacker dummy.txt 2>&1 | grep -q "Error: El archivo no es un ELF válido"
 test_result $?
 
-echo "  5.4 - Fichero de 32-bits (Subject Constraint)."
-./woody_woodpacker resources/sample 2>&1 | grep -q "Error: El archivo no es un ELF de 64 bits"
+echo "  5.4 - Fichero de 32-bits (Ahora soportado! Prótesis no cabe en Code Cave 0 bytes)"
+./woody_woodpacker resources/sample 2>&1 | grep -q "La prótesis"
 test_result $?
 pause_for_user
 
@@ -208,7 +206,7 @@ test_result $?
 
 echo "  8.4 - ELF Header truncado (tamaño 60 bytes, es menor que struct Elf64_Ehdr)."
 dd if=/bin/ls of=trunc_elf bs=1 count=60 > /dev/null 2>&1
-./woody_woodpacker trunc_elf 2>&1 | grep -q -E "(v[áa]lid|mmap|error|Fall|Diseño|l[ií]mites)"
+./woody_woodpacker trunc_elf 2>&1 | grep -q -E "(v[áa]lid|mmap|Error|error|Fall|Diseño|l[ií]mites)"
 test_result $?
 
 echo "  8.5 - Corrupción de Header: e_shoff apunta al infinito (OOB Memory Access)."
