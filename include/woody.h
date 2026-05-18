@@ -15,13 +15,12 @@
 /* ==========================================================================
  * 🛡️ EL MANUAL MÉDICO: ERRORES COMUNES
  * ========================================================================== */
-# define ERR_USAGE "Uso: ./woody_woodpacker <binario>\n"
+# define ERR_USAGE "Uso: ./woody_woodpacker [--xor|--rc4] <binario> [clave-hex-16-bytes]\n"
 # define ERR_OPEN "Error: No se pudo abrir el archivo\n"
 # define ERR_FSTAT "Error: No se pudo obtener información del archivo (o es un directorio)\n"
 # define ERR_MMAP "Error: Fallo al ejecutar mmap\n"
 # define ERR_NOT_ELF "Error: El archivo no es un ELF válido\n"
-# define ERR_NOT_64 "Error: El archivo no es un ELF de 64 bits\n"
-# define ERR_NOT_X86_64 "Error: El binario no tiene una arquitectura x86_64\n"
+# define ERR_NOT_SUPPORTED "Error: La arquitectura no es ni x86_64 (64-bits) ni i386 (32-bits)\n"
 # define ERR_NOT_EXEC "Error: El archivo no es un ejecutable ni un objeto compartido (shared object)\n"
 # define ERR_NOT_LITTLE_ENDIAN "Error: Archivo en formato Big-Endian. Peligro de corrupción de Offsets. Abortado.\n"
 
@@ -32,6 +31,7 @@
  * Esta estructura es como la pizarra al pie de cama de un paciente. Todo
  * analista ("elf_parser"), anestesista ("crypto") o cirujano ("injector")
  * la consultará para saber en qué punto actuar y qué coordenadas usar.
+ * Ahora adaptado también para pacientes infantiles (32-bits).
  * ========================================================================== */
 typedef struct s_woody
 {
@@ -40,18 +40,34 @@ typedef struct s_woody
     size_t      size;       // (Talla) El tamaño total del original
     mode_t      file_mode;  // (Ropa del paciente) Permisos originales (ej. chmod 755)
 
-    // -- Las Radiografías (Cabeceras) --
-    Elf64_Ehdr  *ehdr;           // Puntero maestro: Las constantes vitales del paciente (Header general)
-    Elf64_Phdr  *target_segment; // Dónde hay flujo sanguíneo: Segmento de memoria Ejecutable (Loadable)
-    Elf64_Shdr  *text_section;   // El corazón a encriptar: Sección de Código fuente (.text)
+    // -- Perfil Genético (Fase 3: Multi-Arquitectura) --
+    int         is_32bit;   // Bandera que indica si el paciente es x86_32 (1) o x86_64 (0)
 
+    // -- Las Radiografías (Cabeceras 64-bit) --
+    Elf64_Ehdr  *ehdr64;
+    Elf64_Phdr  *target_segment64;
+    Elf64_Shdr  *text_section64;
+
+    // -- Las Radiografías (Cabeceras 32-bit) --
+    Elf32_Ehdr  *ehdr32;
+    Elf32_Phdr  *target_segment32;
+    Elf32_Shdr  *text_section32;
+
+    // -- Coordenadas Universales Abstractas --
+    uint64_t    orig_entry;     // Punto de entrada original (e_entry)
+    uint64_t    text_offset;    // Dónde empieza la carne .text en disco
+    uint64_t    text_size;      // Cuantos bytes pesa el .text
+    uint64_t    text_vaddr;     // Dirección de ejecución virtual del .text
+    uint64_t    segment_vaddr;  // Dirección de ejecución virtual del segmento LOAD base
+    
     // -- Planimetría de Poda / Cueva --
-    size_t      cave_offset;    // (Coordenada X) Distancia hasta la bolsa de aire (el Code Cave)
+    size_t      cave_offset;    // (Coordenada X en disco) Distancia hasta la bolsa de aire (el Code Cave)
     size_t      cave_size;      // (Capacidad) ¿Cuántos mililitros de virus/prótesis caben aquí?
     
     // -- Departamento de Criptografía (El Cerrajero) --
-    uint8_t     key[16];   // (El Veneno/Antídoto RC4) Clave simétrica de cifrado 128-bit
-    size_t      key_len;   // Siempre será 16 bytes.
+    int         crypto_algo;    // (Multi-Algoritmo) 0 = RC4 (Default), 1 = XOR
+    uint8_t     key[16];        // (El Veneno/Antídoto RC4/XOR) Clave simétrica de cifrado 128-bit
+    size_t      key_len;        // Siempre será 16 bytes.
 } t_woody;
 
 /* --- ORDENANZA PRINCIPAL (main.c) --- */
