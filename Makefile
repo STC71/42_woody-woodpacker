@@ -92,7 +92,7 @@ footer:
 clean:
 	@echo "$(ROJO)[-] Purgando la basura binaria temporal (.o) y el Payload crudo...$(RESET)"
 	@rm -rf $(OBJ_DIR)
-	@rm -f $(STUB) $(STUB_XOR)
+	@rm -f $(STUB) $(STUB_XOR) $(STUB32) $(STUB_XOR32)
 
 fclean: clean
 	@echo "$(ROJO)[-] Exterminando los ejecutables finales y logs de tests...$(RESET)"
