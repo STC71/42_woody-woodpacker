@@ -42,7 +42,7 @@ test_result() {
 
 pause_for_user() {
     echo -e "\n${C_C}>> Pulsa [ENTER] para continuar al siguiente test...${C_DF}"
-    read -r
+    # read -r
     clear
     print_header
 }
@@ -84,7 +84,8 @@ echo -e "${C_Y}OBJETIVO:${C_DF} Confirmar que el binario infectado intercepta la
 echo -e "${C_Y}MÉTODO:${C_DF} Se ejecuta el nuevo ./woody y se busca la cadena '....WOODY....'."
 find_code "Cadena inyectada" "\.\.\.\.WOODY\.\.\.\." asm/payload.s
 echo -e "${C_Y}ESPERADO:${C_DF} La cadena se imprime antes de que el programa devuelva el control al Entry Point original.\n"
-./woody | grep -q "....WOODY...."
+./woody > woody_test2.log 2>&1
+grep -q "....WOODY...." woody_test2.log
 test_result $?
 pause_for_user
 
@@ -310,6 +311,29 @@ echo "  11.4 - Doble Infección (Infectando el propio virus woody)."
 ./woody_woodpacker /bin/ls > /dev/null 2>&1
 valgrind --leak-check=full --error-exitcode=42 ./woody_woodpacker ./woody > /dev/null 2>&1
 if [ $? -ne 42 ]; then test_result 0; else test_result 1; fi
+
+# ---------------------------------------------------------
+echo -e "${C_B}▶ TEST 12: BONUS - ANTI-DEBUGGING (PTRACE EVASION)${C_DF}"
+echo "  12.1 - Strace debe fallar silenciosamente sin imprimir ....WOODY...."
+./woody_woodpacker /bin/ls > /dev/null 2>&1
+strace ./woody > strace_out.log 2>&1
+grep -q "\.\.\.\.WOODY\.\.\.\." strace_out.log
+if [ $? -ne 0 ]; then test_result 0; else test_result 1; fi
+rm -f strace_out.log
+
+# ---------------------------------------------------------
+echo -e "${C_B}▶ TEST 13: BONUS - MULTI-ALGORITMO (RC4 / XOR FLAGS)${C_DF}"
+echo "  13.1 - Verificando que flag --xor compila y el payload inyectado ejecuta el file."
+./woody_woodpacker --xor /bin/ls > woody_out.log 2>&1
+grep -q "XOR" woody_out.log
+if [ $? -eq 0 ]; then
+    ./woody > woody_verify.log 2>&1
+    grep -q "....WOODY...." woody_verify.log
+    if [ $? -eq 0 ]; then test_result 0; else test_result 1; fi
+else
+    test_result 1
+fi
+rm -f woody woody_test2.log woody_out.log woody_verify.log
 
 # Limpieza final adicional
 rm -f tiny.s tiny.o tiny_bin huge_file.bin ls_stripped woody

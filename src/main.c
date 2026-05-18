@@ -209,25 +209,42 @@ int init_woody(const char *filename, t_woody *woody)
 int main(int argc, char **argv)
 {
     t_woody woody;
+    int arg_idx = 1;
 
     // Inicializamos nuestro "Expediente Médico" (la estructura t_woody) llenándola de ceros vacíos.
     memset(&woody, 0, sizeof(t_woody));
+    woody.crypto_algo = 0; // Default RC4
 
-    // Si el usuario no escribe "./woody_woodpacker programa_victima", le regañamos amablemente.
-    if (argc < 2 || argc > 3)
+    // Parseo de Banderas de Multi-Algoritmo (Fase 2 Bonus)
+    if (argc >= 2)
     {
-        fprintf(stderr, "Uso: ./woody_woodpacker <binario> [clave-hex-de-16-bytes]\n");
+        if (strcmp(argv[arg_idx], "--xor") == 0)
+        {
+            woody.crypto_algo = 1;
+            arg_idx++;
+        }
+        else if (strcmp(argv[arg_idx], "--rc4") == 0)
+        {
+            woody.crypto_algo = 0;
+            arg_idx++;
+        }
+    }
+
+    // Si el usuario no escribe "./woody_woodpacker [--xor|--rc4] programa_victima", le regañamos amablemente.
+    if (argc < arg_idx + 1 || argc > arg_idx + 2)
+    {
+        fprintf(stderr, "Uso: ./woody_woodpacker [--xor|--rc4] <binario> [clave-hex-de-16-bytes]\n");
         return (1);
     }
 
     // 1. Tumbamos al paciente en la camilla de la RAM
-    if (init_woody(argv[1], &woody) < 0)
+    if (init_woody(argv[arg_idx], &woody) < 0)
         return (1);
 
-    // 2. ¿Me han entregado una llave hecha a mano, o inventamos una llave secreta aleatoria? (Módulo RC4)
-    if (argc == 3)
+    // 2. ¿Me han entregado una llave hecha a mano, o inventamos una llave secreta aleatoria? (Módulo RC4/XOR)
+    if (argc == arg_idx + 2)
     {
-        if (parse_custom_key(&woody, argv[2]) < 0)
+        if (parse_custom_key(&woody, argv[arg_idx + 1]) < 0)
         {
             cleanup_woody(&woody);
             return (1);
@@ -237,12 +254,15 @@ int main(int argc, char **argv)
         generate_random_key(&woody);
 
     // Mostramos la llave secreta inyectable en pantalla para fardar (estilo Hacker clásico).
-    printf("CLAVE [128-bit RC4]: 0x");
+    if (woody.crypto_algo == 1)
+        printf("CLAVE [128-bit XOR]: 0x");
+    else
+        printf("CLAVE [128-bit RC4]: 0x");
     for (size_t i = 0; i < woody.key_len; i++)
         printf("%02X", woody.key[i]);
     printf("\n");
 
-    printf("¡ÉXITO! Archivo '%s' mapeado en la dirección %p\n", argv[1], woody.addr);
+    printf("¡ÉXITO! Archivo '%s' mapeado en la dirección %p\n", argv[arg_idx], woody.addr);
     printf("Original Entry Point (OEP) original reside en 0x%lx\n", woody.ehdr->e_entry);
 
     // 3. Llamamos al EXPLORADOR (elf_parser.c) para que analice las entrañas 
